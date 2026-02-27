@@ -381,6 +381,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -397,19 +398,20 @@
                                        Foreground="#4B5563" />
 
                             <ComboBox x:Name="RunningTargetsComboBox"
-                                      Grid.Row="1"
-                                      Height="40"
-                                      Style="{StaticResource RoundedComboBoxStyle}"
-                                      ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
-                                      FontSize="14"
-                                      VerticalContentAlignment="Center"
+                                       Grid.Row="1"
+                                       Margin="0,0,12,0"
+                                       Height="40"
+                                       Style="{StaticResource RoundedComboBoxStyle}"
+                                       ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
+                                       FontSize="14"
+                                       VerticalContentAlignment="Center"
                                       DisplayMemberPath="DisplayText" />
 
                             <Button x:Name="RefreshTargetsButton"
                                     Grid.Row="1"
                                     Grid.Column="1"
-                                    Margin="10,0,0,0"
-                                    Width="130"
+                                    Margin="0,0,8,0"
+                                    Width="82"
                                     Height="40"
                                     Style="{StaticResource IconNeutralButtonStyle}"
                                     Click="RefreshTargetsButton_OnClick">
@@ -428,8 +430,8 @@
                             <Button x:Name="AddTargetButton"
                                     Grid.Row="1"
                                     Grid.Column="2"
-                                    Margin="10,0,0,0"
-                                    Width="130"
+                                    Margin="0,0,8,0"
+                                    Width="92"
                                     Height="40"
                                     Style="{StaticResource IconPrimaryButtonStyle}"
                                     Click="AddTargetButton_OnClick">
@@ -445,9 +447,28 @@
                                 </StackPanel>
                             </Button>
 
-                            <Border Grid.Row="1"
+                            <Button x:Name="PickWindowButton"
+                                    Grid.Row="1"
                                     Grid.Column="3"
-                                    Margin="10,0,0,0"
+                                    Width="96"
+                                    Height="40"
+                                    Style="{StaticResource IconNeutralButtonStyle}"
+                                    Click="PickWindowButton_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7C3;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="13"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="PickWindowButtonTextBlock"
+                                               Margin="7,0,0,0"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Border Grid.Row="2"
+                                    Grid.ColumnSpan="4"
+                                    Margin="0,10,0,0"
                                     Padding="10,8"
                                     CornerRadius="10"
                                     Background="#FFF6F8FC"

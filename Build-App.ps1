@@ -33,7 +33,7 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 }
 
 if ($Version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') {
-    throw "Invalid version format: $Version. Use formats like 1.0.5 or 1.0.5.0."
+    throw "Invalid version format: $Version. Use formats like 1.0.0 or 1.0.0.0."
 }
 
 $versionParts = $Version.Split('.')

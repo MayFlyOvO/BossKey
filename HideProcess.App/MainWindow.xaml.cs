@@ -27,6 +27,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly JsonSettingsStore _settingsStore = new();
     private readonly AutoStartService _autoStartService = new();
     private readonly ProcessWindowService _processWindowService = new();
+    private readonly WindowPickerService _windowPickerService;
+    private readonly WindowPickerHighlightWindow _windowPickerHighlightWindow = new();
     private readonly GlobalHotkeyService _globalHotkeyService = new();
     private readonly UpdatePackageType _currentPackageType;
     private readonly AppUpdateService _appUpdateService;
@@ -39,6 +41,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Forms.NotifyIcon? _notifyIcon;
     private Drawing.Icon? _trayIcon;
     private bool _allowClose;
+    private bool _isClosing;
     private bool _isCheckingUpdates;
     private bool _isLogCollapsed;
     private Visibility _updateDownloadOverlayVisibility = Visibility.Collapsed;
@@ -50,6 +53,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public MainWindow()
     {
         InitializeComponent();
+        _windowPickerService = new WindowPickerService(_processWindowService);
         _currentPackageType = ResolveUpdatePackageType();
         _appUpdateService = new AppUpdateService(
             UpdateRepositoryOwner,
@@ -66,6 +70,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Closing += MainWindow_OnClosing;
         Closed += MainWindow_OnClosed;
         Localizer.LanguageChanged += Localizer_OnLanguageChanged;
+        _windowPickerService.HoverTargetChanged += WindowPickerService_OnHoverTargetChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -221,6 +226,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        _isClosing = true;
+        _windowPickerService.Cancel();
+        _windowPickerHighlightWindow.HideHighlight();
         _processWindowService.ShowHiddenTargets(bringToFront: false);
         _globalHotkeyService.Stop();
         SaveCurrentWindowPlacement();
@@ -232,6 +240,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _hwndSource?.RemoveHook(WndProc);
         _hwndSource = null;
         Localizer.LanguageChanged -= Localizer_OnLanguageChanged;
+        _windowPickerService.HoverTargetChanged -= WindowPickerService_OnHoverTargetChanged;
+        _windowPickerService.Dispose();
+        _windowPickerHighlightWindow.Close();
         _globalHotkeyService.Dispose();
 
         if (_notifyIcon is not null)
@@ -249,6 +260,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.Invoke(() =>
         {
+            if (_windowPickerService.IsPicking)
+            {
+                return;
+            }
+
             if (action == HotkeyAction.Toggle)
             {
                 if (_processWindowService.HasHiddenWindows)
@@ -276,6 +292,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Dispatcher.Invoke(ApplyLocalization);
     }
 
+    private void WindowPickerService_OnHoverTargetChanged(object? sender, WindowPickerHoverChangedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_isClosing || e.HoverTarget is null)
+            {
+                _windowPickerHighlightWindow.HideHighlight();
+                return;
+            }
+
+            _windowPickerHighlightWindow.ShowHighlight(
+                e.HoverTarget.Left,
+                e.HoverTarget.Top,
+                e.HoverTarget.Width,
+                e.HoverTarget.Height,
+                e.HoverTarget.Target.ProcessName);
+        });
+    }
+
     private void RefreshTargetsButton_OnClick(object sender, RoutedEventArgs e)
     {
         RefreshRunningTargets();
@@ -295,28 +330,62 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var alreadyExists = _selectedTargets.Any(target =>
-            (!string.IsNullOrWhiteSpace(target.ProcessPath)
-             && !string.IsNullOrWhiteSpace(selected.ProcessPath)
-             && string.Equals(target.ProcessPath, selected.ProcessPath, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(target.ProcessName, selected.ProcessName, StringComparison.OrdinalIgnoreCase));
+        AddTarget(selected.ProcessName, selected.ProcessPath);
+    }
 
-        if (alreadyExists)
+    private async void PickWindowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_windowPickerService.IsPicking)
         {
-            SetStatus(Localizer.T("Main.StatusDuplicate"));
+            SetStatus(Localizer.T("Main.StatusPickerBusy"));
             return;
         }
 
-        _selectedTargets.Add(new TargetAppConfig
+        Task<WindowPickResult> pickTask;
+        try
         {
-            ProcessName = selected.ProcessName,
-            ProcessPath = selected.ProcessPath,
-            Enabled = true,
-            MuteOnHide = false
-        });
+            pickTask = _windowPickerService.PickAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                this,
+                Localizer.Format("Main.InitErrorText", ex.Message),
+                Localizer.T("Main.InitErrorTitle"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
 
-        PersistSettings();
-        SetStatus(Localizer.Format("Main.StatusAdded", selected.ProcessName));
+        SetStatus(Localizer.T("Main.StatusPickerStarted"));
+        _notifyIcon?.ShowBalloonTip(
+            1800,
+            Localizer.T("Main.PickWindow"),
+            Localizer.T("Main.PickWindowHint"),
+            Forms.ToolTipIcon.Info);
+
+        var restoreState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
+        Hide();
+
+        var result = await pickTask;
+        if (_isClosing)
+        {
+            return;
+        }
+
+        _windowPickerHighlightWindow.HideHighlight();
+        Show();
+        WindowState = restoreState;
+        Activate();
+
+        if (result.IsCanceled || result.Target is null)
+        {
+            SetStatus(Localizer.T("Main.StatusPickerCanceled"));
+            return;
+        }
+
+        RefreshRunningTargets();
+        AddTarget(result.Target.ProcessName, result.Target.ProcessPath);
     }
 
     private void RemoveTargetButton_OnClick(object sender, RoutedEventArgs e)
@@ -561,6 +630,32 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Activate();
     }
 
+    private void AddTarget(string processName, string? processPath)
+    {
+        var alreadyExists = _selectedTargets.Any(target =>
+            (!string.IsNullOrWhiteSpace(target.ProcessPath)
+             && !string.IsNullOrWhiteSpace(processPath)
+             && string.Equals(target.ProcessPath, processPath, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(target.ProcessName, processName, StringComparison.OrdinalIgnoreCase));
+
+        if (alreadyExists)
+        {
+            SetStatus(Localizer.T("Main.StatusDuplicate"));
+            return;
+        }
+
+        _selectedTargets.Add(new TargetAppConfig
+        {
+            ProcessName = processName,
+            ProcessPath = processPath,
+            Enabled = true,
+            MuteOnHide = false
+        });
+
+        PersistSettings();
+        SetStatus(Localizer.Format("Main.StatusAdded", processName));
+    }
+
     private static Drawing.Icon LoadTrayIcon()
     {
         try
@@ -590,6 +685,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SelectedTargetsLabelTextBlock.Text = Localizer.T("Main.SelectedTargets");
         RefreshButtonTextBlock.Text = Localizer.T("Main.Refresh");
         AddTargetButtonTextBlock.Text = Localizer.T("Main.AddTarget");
+        PickWindowButtonTextBlock.Text = Localizer.T("Main.PickWindow");
         HideNowButtonTextBlock.Text = Localizer.T("Main.HideNow");
         ShowNowButtonTextBlock.Text = Localizer.T("Main.ShowNow");
         OpenSettingsButtonTextBlock.Text = Localizer.T("Main.OpenSettings");

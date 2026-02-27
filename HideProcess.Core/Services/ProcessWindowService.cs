@@ -20,6 +20,7 @@ public sealed class ProcessWindowService
         {
             result.Add(new RunningTargetInfo
             {
+                WindowHandle = window.Handle,
                 ProcessId = window.ProcessId,
                 ProcessName = window.ProcessName,
                 ProcessPath = window.ProcessPath,
@@ -31,6 +32,25 @@ public sealed class ProcessWindowService
             .OrderBy(static x => x.ProcessName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(static x => x.ProcessId)
             .ToList();
+    }
+
+    public bool TryGetRunningTargetFromScreenPoint(int x, int y, out RunningTargetInfo target)
+    {
+        var point = new NativeMethods.Point { X = x, Y = y };
+        var handle = NativeMethods.WindowFromPoint(point);
+        if (handle == IntPtr.Zero)
+        {
+            target = null!;
+            return false;
+        }
+
+        var rootHandle = NativeMethods.GetAncestor(handle, NativeMethods.GaRoot);
+        if (rootHandle != IntPtr.Zero)
+        {
+            handle = rootHandle;
+        }
+
+        return TryBuildRunningTargetInfo(handle, out target);
     }
 
     public int HideTargets(IEnumerable<TargetAppConfig> targets)
@@ -160,50 +180,88 @@ public sealed class ProcessWindowService
     private static IEnumerable<WindowInfo> EnumerateWindows()
     {
         var windows = new List<WindowInfo>();
-        var currentPid = Environment.ProcessId;
 
         NativeMethods.EnumWindows((windowHandle, _) =>
         {
-            if (!NativeMethods.IsWindowVisible(windowHandle))
+            if (!TryBuildWindowInfo(windowHandle, out var windowInfo))
             {
                 return true;
             }
 
-            if (NativeMethods.GetWindowTextLength(windowHandle) == 0)
-            {
-                return true;
-            }
-
-            NativeMethods.GetWindowThreadProcessId(windowHandle, out var processIdRaw);
-            var processId = unchecked((int)processIdRaw);
-            if (processId <= 0 || processId == currentPid)
-            {
-                return true;
-            }
-
-            Process process;
-            try
-            {
-                process = Process.GetProcessById(processId);
-            }
-            catch
-            {
-                return true;
-            }
-
-            var processName = NormalizeProcessName(process.ProcessName);
-            var processPath = TryGetProcessPath(process);
-            var windowTitle = GetWindowTitle(windowHandle);
-            if (string.IsNullOrWhiteSpace(windowTitle))
-            {
-                return true;
-            }
-
-            windows.Add(new WindowInfo(windowHandle, processId, processName, processPath, windowTitle));
+            windows.Add(windowInfo);
             return true;
         }, IntPtr.Zero);
 
         return windows;
+    }
+
+    private static bool TryBuildRunningTargetInfo(IntPtr handle, out RunningTargetInfo target)
+    {
+        if (!TryBuildWindowInfo(handle, out var windowInfo))
+        {
+            target = null!;
+            return false;
+        }
+
+        target = new RunningTargetInfo
+        {
+            WindowHandle = windowInfo.Handle,
+            ProcessId = windowInfo.ProcessId,
+            ProcessName = windowInfo.ProcessName,
+            ProcessPath = windowInfo.ProcessPath,
+            WindowTitle = windowInfo.WindowTitle
+        };
+        return true;
+    }
+
+    private static bool TryBuildWindowInfo(IntPtr handle, out WindowInfo windowInfo)
+    {
+        windowInfo = null!;
+
+        if (!NativeMethods.IsWindow(handle) || !NativeMethods.IsWindowVisible(handle))
+        {
+            return false;
+        }
+
+        if (NativeMethods.GetWindowTextLength(handle) == 0)
+        {
+            return false;
+        }
+
+        NativeMethods.GetWindowThreadProcessId(handle, out var processIdRaw);
+        var processId = unchecked((int)processIdRaw);
+        if (processId <= 0 || processId == Environment.ProcessId)
+        {
+            return false;
+        }
+
+        Process process;
+        try
+        {
+            process = Process.GetProcessById(processId);
+        }
+        catch
+        {
+            return false;
+        }
+
+        try
+        {
+            var processName = NormalizeProcessName(process.ProcessName);
+            var processPath = TryGetProcessPath(process);
+            var windowTitle = GetWindowTitle(handle);
+            if (string.IsNullOrWhiteSpace(windowTitle))
+            {
+                return false;
+            }
+
+            windowInfo = new WindowInfo(handle, processId, processName, processPath, windowTitle);
+            return true;
+        }
+        finally
+        {
+            process.Dispose();
+        }
     }
 
     private static string NormalizeProcessName(string processName)
