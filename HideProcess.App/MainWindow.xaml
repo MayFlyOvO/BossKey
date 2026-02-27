@@ -1,0 +1,792 @@
+<Window x:Class="HideProcess.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        mc:Ignorable="d"
+        Width="980"
+        Height="700"
+        MinWidth="900"
+        MinHeight="620"
+        WindowStyle="None"
+        Icon="pack://application:,,,/Assets/HideProcess.ico"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#FFF6F8FB"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="Segoe UI Variable Text">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="6"
+                            CornerRadius="16"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="Background" Value="#00FFFFFF" />
+            <Setter Property="BorderBrush" Value="#00FFFFFF" />
+            <Setter Property="Foreground" Value="#4B5563" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="8"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FFEFF2F6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconNeutralButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="BorderBrush" Value="#FFE4E7EB" />
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="10"
+                                BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FFF7F8FA" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource IconNeutralButtonStyle}">
+            <Setter Property="Background" Value="#FF0A84FF" />
+            <Setter Property="BorderBrush" Value="#FF0A84FF" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="10"
+                                BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FF0077EE" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#FF0077EE" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconSolidButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="BorderBrush" Value="#FF0A84FF" />
+            <Setter Property="Background" Value="#FF0A84FF" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="10"
+                                BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.9" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FlatCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#3D4A56" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="Box"
+                                    Width="18"
+                                    Height="18"
+                                    CornerRadius="5"
+                                    BorderThickness="1.5"
+                                    BorderBrush="#FFB8C2CE"
+                                    Background="#FFFFFFFF"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center" />
+
+                            <Path x:Name="CheckMark"
+                                  Width="10"
+                                  Height="8"
+                                  Data="M 0.8 4.2 L 3.8 7.2 L 9.2 1.0"
+                                  Stretch="Fill"
+                                  Stroke="White"
+                                  StrokeThickness="2.2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Visibility="Collapsed"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Center" />
+
+                            <ContentPresenter Grid.Column="1"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="#FF0A84FF" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#FF0A84FF" />
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#FF7AA8FF" />
+                                <Setter TargetName="Box" Property="Background" Value="#FFF6FAFF" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True" />
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Box" Property="Background" Value="#FF0077EE" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#FF0077EE" />
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RoundedComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemBorder"
+                                CornerRadius="7"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#FFEFF4FB" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#FFE7F0FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RoundedComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#FFE4E7EB" />
+            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="12,0,34,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ComboBorder"
+                                    CornerRadius="10"
+                                    BorderThickness="1"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}">
+                                <Grid>
+                                    <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Left"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
+                                    <TextBlock Text="&#xE70D;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="10"
+                                               Foreground="#667385"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Right"
+                                               Margin="0,0,12,0" />
+                                </Grid>
+                            </Border>
+
+                            <ToggleButton x:Name="DropDownToggle"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          ClickMode="Press"
+                                          Background="Transparent"
+                                          BorderBrush="Transparent">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent" />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Slide">
+                                <Border Margin="0,4,0,0"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        CornerRadius="10"
+                                        Background="White"
+                                        BorderThickness="1"
+                                        BorderBrush="#FFE4E7EB">
+                                    <ScrollViewer MaxHeight="220">
+                                        <StackPanel IsItemsHost="True" Margin="4" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ComboBorder" Property="Background" Value="#FFF9FAFC" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="ComboBorder" Property="BorderBrush" Value="#FF7AA8FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#FFF6F8FB">
+        <Border Margin="0"
+                CornerRadius="16"
+                Background="White"
+                BorderThickness="0"
+                BorderBrush="#00FFFFFF"
+                ClipToBounds="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="46" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0"
+                      Background="#FFF7F8FA"
+                      MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="14,0,0,0">
+                        <Image Width="28"
+                               Height="28"
+                               Source="pack://application:,,,/Assets/HideProcess.ico"
+                               VerticalAlignment="Center"
+                               SnapsToDevicePixels="True" />
+                        <TextBlock x:Name="AppTitleTextBlock"
+                                   Margin="8,0,0,0"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1F2937"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="0,0,8,0">
+                        <Button Style="{StaticResource TitleBarButtonStyle}"
+                                Click="MinimizeButton_OnClick">
+                            <TextBlock Text="&#xE921;"
+                                       FontFamily="Segoe Fluent Icons"
+                                       FontSize="10" />
+                        </Button>
+                        <Button Style="{StaticResource TitleBarButtonStyle}"
+                                Click="MaximizeRestoreButton_OnClick">
+                            <TextBlock x:Name="MaximizeRestoreGlyphTextBlock"
+                                       Text="&#xE922;"
+                                       FontFamily="Segoe Fluent Icons"
+                                       FontSize="10" />
+                        </Button>
+                        <Button Style="{StaticResource TitleBarButtonStyle}"
+                                Margin="0"
+                                Click="CloseButton_OnClick">
+                            <TextBlock Text="&#xE8BB;"
+                                       FontFamily="Segoe Fluent Icons"
+                                       FontSize="10" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="16,14,16,14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Padding="14"
+                            CornerRadius="12"
+                            Background="#FFFAFBFD"
+                            BorderThickness="1"
+                            BorderBrush="#FFE9EDF3">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="RunningLabelTextBlock"
+                                       Grid.ColumnSpan="4"
+                                       Margin="0,0,0,10"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4B5563" />
+
+                            <ComboBox x:Name="RunningTargetsComboBox"
+                                      Grid.Row="1"
+                                      Height="40"
+                                      Style="{StaticResource RoundedComboBoxStyle}"
+                                      ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
+                                      FontSize="14"
+                                      VerticalContentAlignment="Center"
+                                      DisplayMemberPath="DisplayText" />
+
+                            <Button x:Name="RefreshTargetsButton"
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Margin="10,0,0,0"
+                                    Width="130"
+                                    Height="40"
+                                    Style="{StaticResource IconNeutralButtonStyle}"
+                                    Click="RefreshTargetsButton_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE72C;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="13"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="RefreshButtonTextBlock"
+                                               Margin="7,0,0,0"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="AddTargetButton"
+                                    Grid.Row="1"
+                                    Grid.Column="2"
+                                    Margin="10,0,0,0"
+                                    Width="130"
+                                    Height="40"
+                                    Style="{StaticResource IconPrimaryButtonStyle}"
+                                    Click="AddTargetButton_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE710;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="13"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="AddTargetButtonTextBlock"
+                                               Margin="7,0,0,0"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Border Grid.Row="1"
+                                    Grid.Column="3"
+                                    Margin="10,0,0,0"
+                                    Padding="10,8"
+                                    CornerRadius="10"
+                                    Background="#FFF6F8FC"
+                                    BorderThickness="1"
+                                    BorderBrush="#FFE6ECF8">
+                                <TextBlock x:Name="HotkeyHintTextBlock"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Foreground="#4B5563" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Margin="0,12,0,0"
+                            Padding="14"
+                            CornerRadius="12"
+                            Background="#FFFFFFFF"
+                            BorderThickness="1"
+                            BorderBrush="#FFE9EDF3">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="SelectedTargetsLabelTextBlock"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4B5563" />
+
+                            <DataGrid x:Name="SelectedTargetsDataGrid"
+                                      Grid.Row="1"
+                                      Margin="0,10,0,0"
+                                      AutoGenerateColumns="False"
+                                      HeadersVisibility="Column"
+                                      CanUserAddRows="False"
+                                      CanUserResizeRows="False"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#FFE7ECF3"
+                                      VerticalGridLinesBrush="#00FFFFFF"
+                                      Background="#FFFFFFFF"
+                                      RowBackground="#FFFFFFFF"
+                                      RowHeaderWidth="0"
+                                      BorderThickness="1"
+                                      BorderBrush="#FFE8EDF3"
+                                      AlternatingRowBackground="#FFFAFBFC">
+                                <DataGrid.Resources>
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FFE3EEFF" />
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#FFE3EEFF" />
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#0F2A47" />
+                                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#0F2A47" />
+
+                                    <Style x:Key="FlatDataGridHeaderStyle" TargetType="DataGridColumnHeader">
+                                        <Setter Property="Padding" Value="10,8" />
+                                        <Setter Property="Height" Value="32" />
+                                        <Setter Property="FontSize" Value="12.5" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="#4B5563" />
+                                        <Setter Property="Background" Value="#FFF6F8FC" />
+                                        <Setter Property="BorderBrush" Value="#FFE7ECF3" />
+                                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="DataGridColumnHeader">
+                                                    <Border Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}">
+                                                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+
+                                    <Style x:Key="FlatDataGridRowStyle" TargetType="DataGridRow">
+                                        <Setter Property="MinHeight" Value="38" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="Foreground" Value="#1F2937" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#FFF4F8FF" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#FFE8F1FF" />
+                                                <Setter Property="Foreground" Value="#0F2A47" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+
+                                    <Style x:Key="FlatDataGridCellStyle" TargetType="DataGridCell">
+                                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        <Setter Property="Padding" Value="10,0,10,0" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="BorderBrush" Value="Transparent" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Foreground" Value="#1F2937" />
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#FFE3EEFF" />
+                                                <Setter Property="Foreground" Value="#0F2A47" />
+                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+
+                                    <Style x:Key="CenteredTextBlockStyle" TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                    </Style>
+                                    <Style x:Key="FlatCenteredCheckBoxStyle"
+                                           TargetType="CheckBox"
+                                           BasedOn="{StaticResource FlatCheckBoxStyle}">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="Margin" Value="0" />
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style BasedOn="{StaticResource FlatDataGridHeaderStyle}" TargetType="DataGridColumnHeader" />
+                                </DataGrid.ColumnHeaderStyle>
+                                <DataGrid.RowStyle>
+                                    <Style BasedOn="{StaticResource FlatDataGridRowStyle}" TargetType="DataGridRow" />
+                                </DataGrid.RowStyle>
+                                <DataGrid.CellStyle>
+                                    <Style BasedOn="{StaticResource FlatDataGridCellStyle}" TargetType="DataGridCell" />
+                                </DataGrid.CellStyle>
+                                <DataGrid.Columns>
+                                    <DataGridCheckBoxColumn x:Name="EnabledColumn"
+                                                            Width="70"
+                                                            Binding="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}">
+                                        <DataGridCheckBoxColumn.ElementStyle>
+                                            <Style BasedOn="{StaticResource FlatCenteredCheckBoxStyle}" TargetType="CheckBox" />
+                                        </DataGridCheckBoxColumn.ElementStyle>
+                                        <DataGridCheckBoxColumn.EditingElementStyle>
+                                            <Style BasedOn="{StaticResource FlatCenteredCheckBoxStyle}" TargetType="CheckBox" />
+                                        </DataGridCheckBoxColumn.EditingElementStyle>
+                                    </DataGridCheckBoxColumn>
+                                    <DataGridTextColumn x:Name="ProcessColumn"
+                                                        Width="180"
+                                                        IsReadOnly="True"
+                                                        Binding="{Binding ProcessName}"
+                                                        ElementStyle="{StaticResource CenteredTextBlockStyle}" />
+                                    <DataGridTextColumn x:Name="PathColumn"
+                                                        Width="*"
+                                                        IsReadOnly="True"
+                                                        Binding="{Binding ProcessPath}"
+                                                        ElementStyle="{StaticResource CenteredTextBlockStyle}" />
+                                    <DataGridCheckBoxColumn x:Name="MuteOnHideColumn"
+                                                            Width="70"
+                                                            Binding="{Binding MuteOnHide, UpdateSourceTrigger=PropertyChanged}">
+                                        <DataGridCheckBoxColumn.ElementStyle>
+                                            <Style BasedOn="{StaticResource FlatCenteredCheckBoxStyle}" TargetType="CheckBox" />
+                                        </DataGridCheckBoxColumn.ElementStyle>
+                                        <DataGridCheckBoxColumn.EditingElementStyle>
+                                            <Style BasedOn="{StaticResource FlatCenteredCheckBoxStyle}" TargetType="CheckBox" />
+                                        </DataGridCheckBoxColumn.EditingElementStyle>
+                                    </DataGridCheckBoxColumn>
+                                    <DataGridTemplateColumn x:Name="ActionColumn"
+                                                            Width="108">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Padding="10,6"
+                                                        Width="78"
+                                                        Height="30"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Style="{StaticResource IconNeutralButtonStyle}"
+                                                        Click="RemoveTargetButton_OnClick">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="&#xE74D;"
+                                                                   FontFamily="Segoe Fluent Icons"
+                                                                   FontSize="12"
+                                                                   VerticalAlignment="Center" />
+                                                        <TextBlock Margin="6,0,0,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=DataContext.RemoveButtonText}" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="2"
+                                Margin="0,12,0,0"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button x:Name="HideNowButton"
+                                Width="130"
+                                Height="40"
+                                Margin="0,0,10,0"
+                                Style="{StaticResource IconSolidButtonStyle}"
+                                Background="#FF34C759"
+                                BorderBrush="#FF34C759"
+                                Foreground="White"
+                                Click="HideNowButton_OnClick">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8A7;"
+                                           FontFamily="Segoe Fluent Icons"
+                                           FontSize="13"
+                                           VerticalAlignment="Center" />
+                                <TextBlock x:Name="HideNowButtonTextBlock"
+                                           Margin="7,0,0,0"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ShowNowButton"
+                                Width="130"
+                                Height="40"
+                                Margin="0,0,10,0"
+                                Style="{StaticResource IconSolidButtonStyle}"
+                                Background="#FF0A84FF"
+                                BorderBrush="#FF0A84FF"
+                                Foreground="White"
+                                Click="ShowNowButton_OnClick">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE890;"
+                                           FontFamily="Segoe Fluent Icons"
+                                           FontSize="13"
+                                           VerticalAlignment="Center" />
+                                <TextBlock x:Name="ShowNowButtonTextBlock"
+                                           Margin="7,0,0,0"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="OpenSettingsButton"
+                                Width="130"
+                                Height="40"
+                                Style="{StaticResource IconNeutralButtonStyle}"
+                                Click="OpenSettingsButton_OnClick">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE713;"
+                                           FontFamily="Segoe Fluent Icons"
+                                           FontSize="13"
+                                           VerticalAlignment="Center" />
+                                <TextBlock x:Name="OpenSettingsButtonTextBlock"
+                                           Margin="7,0,0,0"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <Border Grid.Row="3"
+                            Margin="0,12,0,0"
+                            Padding="12"
+                            CornerRadius="12"
+                            Background="#FFF9FAFC"
+                            BorderThickness="1"
+                            BorderBrush="#FFE9EDF3">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="LogTitleTextBlock"
+                                       Grid.Column="0"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4B5563"
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock x:Name="StatusTextBlock"
+                                       Grid.Column="1"
+                                       Margin="12,0,12,0"
+                                       FontSize="12"
+                                       Foreground="#4B5563"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="Collapsed" />
+
+                            <Button Grid.Column="2"
+                                    x:Name="ToggleLogsButton"
+                                    Width="108"
+                                    Height="32"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource IconNeutralButtonStyle}"
+                                    Click="ToggleLogsButton_OnClick">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="ToggleLogsGlyphTextBlock"
+                                               Text="&#xE70E;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="11"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="ToggleLogsButtonTextBlock"
+                                               Margin="6,0,0,0"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="3"
+                                    x:Name="ClearLogsButton"
+                                    Width="108"
+                                    Height="32"
+                                    Style="{StaticResource IconNeutralButtonStyle}"
+                                    Click="ClearLogsButton_OnClick">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE74D;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="11"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="ClearLogsButtonTextBlock"
+                                               Margin="6,0,0,0"
+                                               VerticalAlignment="Center" />
+                                    </StackPanel>
+                            </Button>
+
+                            <ListBox x:Name="LogListBox"
+                                     Grid.Row="1"
+                                     Grid.ColumnSpan="4"
+                                     Margin="0,10,0,0"
+                                     Height="110"
+                                     BorderThickness="1"
+                                     BorderBrush="#FFE4E7EB"
+                                     Background="White"
+                                     ItemsSource="{Binding LogEntries}" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

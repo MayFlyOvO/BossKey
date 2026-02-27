@@ -1,0 +1,283 @@
+using System.Globalization;
+
+namespace HideProcess.App.Localization;
+
+public static class Localizer
+{
+    private const string DefaultLanguage = "zh-CN";
+
+    private static readonly Dictionary<string, Dictionary<string, string>> Resources = new()
+    {
+        ["zh-CN"] = new Dictionary<string, string>
+        {
+            ["Main.WindowTitle"] = "HideProcess 老板键",
+            ["Main.Title"] = "HideProcess",
+            ["Main.RunningLabel"] = "运行中窗口",
+            ["Main.Refresh"] = "刷新",
+            ["Main.AddTarget"] = "添加目标",
+            ["Main.SelectedTargets"] = "已选目标",
+            ["Main.EnabledColumn"] = "启用",
+            ["Main.ProcessColumn"] = "进程名",
+            ["Main.PathColumn"] = "进程路径",
+            ["Main.ActionColumn"] = "操作",
+            ["Main.Remove"] = "移除",
+            ["Main.HideNow"] = "立即隐藏",
+            ["Main.ShowNow"] = "立即显示",
+            ["Main.OpenSettings"] = "设置",
+            ["Main.HotkeyHint"] = "隐藏: {0}    显示: {1}",
+            ["Main.ToggleHint"] = "切换: {0}",
+            ["Main.LogTitle"] = "运行日志",
+            ["Main.ClearLogs"] = "清空日志",
+            ["Main.CollapseLogs"] = "折叠",
+            ["Main.ExpandLogs"] = "展开",
+            ["Main.LogCleared"] = "日志已清空。",
+            ["Main.PreviousUncleanExit"] = "检测到上次未正常退出，请确认窗口状态。",
+            ["Main.StatusReady"] = "全局热键已启用。",
+            ["Main.StatusRefreshed"] = "运行中窗口列表已刷新。",
+            ["Main.StatusDuplicate"] = "目标已存在。",
+            ["Main.StatusAdded"] = "已添加目标: {0}",
+            ["Main.StatusRemoved"] = "已移除目标: {0}",
+            ["Main.StatusNoTargets"] = "尚未配置可操作目标。",
+            ["Main.StatusHidden"] = "已隐藏 {0} 个窗口。",
+            ["Main.StatusNoMatched"] = "未找到可隐藏的匹配窗口。",
+            ["Main.StatusShown"] = "已恢复 {0} 个窗口。",
+            ["Main.StatusNoHidden"] = "没有可恢复的隐藏窗口。",
+            ["Main.StatusSaveFailed"] = "保存失败: {0}",
+            ["Main.StatusSettingsApplied"] = "设置已应用。",
+            ["Main.InitErrorTitle"] = "错误",
+            ["Main.InitErrorText"] = "初始化失败: {0}",
+            ["Main.HintTitle"] = "提示",
+            ["Main.SelectRunningTarget"] = "请先选择一个运行中的窗口。",
+            ["Tray.ShowMain"] = "显示主界面",
+            ["Tray.HideTargets"] = "隐藏目标窗口",
+            ["Tray.ShowTargets"] = "恢复目标窗口",
+            ["Tray.Exit"] = "退出",
+            ["Tray.MinimizedTitle"] = "HideProcess",
+            ["Tray.MinimizedText"] = "程序已最小化到托盘。",
+            ["Settings.Title"] = "设置",
+            ["Settings.Header"] = "应用设置",
+            ["Settings.Hotkeys"] = "热键",
+            ["Settings.HideHotkey"] = "隐藏热键",
+            ["Settings.ShowHotkey"] = "显示热键",
+            ["Settings.SetHotkey"] = "设置热键",
+            ["Settings.General"] = "通用",
+            ["Settings.StartWithWindows"] = "开机自动启动",
+            ["Settings.MinimizeToTray"] = "关闭窗口时最小化到托盘",
+            ["Settings.Language"] = "语言",
+            ["Settings.Import"] = "导入",
+            ["Settings.Export"] = "导出",
+            ["Settings.ImportSuccess"] = "配置导入成功。",
+            ["Settings.ExportSuccess"] = "配置导出成功。",
+            ["Settings.ImportFailed"] = "配置导入失败: {0}",
+            ["Settings.ExportFailed"] = "配置导出失败: {0}",
+            ["Settings.HotkeyWarningToggle"] = "隐藏热键与显示热键相同，将按切换模式工作。",
+            ["Settings.HotkeyWarningNoModifier"] = "{0} 建议包含 Ctrl/Alt/Shift/Win，避免误触。",
+            ["Settings.HotkeyWarningReserved"] = "{0} 可能与系统快捷键冲突: {1}",
+            ["Settings.Cancel"] = "取消",
+            ["Settings.Save"] = "保存",
+            ["Hotkey.TitleHide"] = "设置隐藏热键",
+            ["Hotkey.TitleShow"] = "设置显示热键",
+            ["Hotkey.Title"] = "热键捕获",
+            ["Hotkey.Instruction"] = "请按下要设置的组合键，然后点击确定。",
+            ["Hotkey.Current"] = "当前组合",
+            ["Hotkey.Clear"] = "清空",
+            ["Hotkey.Ok"] = "确定",
+            ["Hotkey.Cancel"] = "取消",
+            ["Hotkey.Empty"] = "请至少按下一个按键。"
+        },
+        ["en-US"] = new Dictionary<string, string>
+        {
+            ["Main.WindowTitle"] = "HideProcess Boss Key",
+            ["Main.Title"] = "HideProcess",
+            ["Main.RunningLabel"] = "Running Windows",
+            ["Main.Refresh"] = "Refresh",
+            ["Main.AddTarget"] = "Add Target",
+            ["Main.SelectedTargets"] = "Selected Targets",
+            ["Main.EnabledColumn"] = "On",
+            ["Main.ProcessColumn"] = "Process",
+            ["Main.PathColumn"] = "Path",
+            ["Main.ActionColumn"] = "Action",
+            ["Main.Remove"] = "Remove",
+            ["Main.HideNow"] = "Hide Now",
+            ["Main.ShowNow"] = "Show Now",
+            ["Main.OpenSettings"] = "Settings",
+            ["Main.HotkeyHint"] = "Hide: {0}    Show: {1}",
+            ["Main.ToggleHint"] = "Toggle: {0}",
+            ["Main.LogTitle"] = "Activity Log",
+            ["Main.ClearLogs"] = "Clear Logs",
+            ["Main.CollapseLogs"] = "Collapse",
+            ["Main.ExpandLogs"] = "Expand",
+            ["Main.LogCleared"] = "Logs cleared.",
+            ["Main.PreviousUncleanExit"] = "Detected previous unclean exit. Please verify target window states.",
+            ["Main.StatusReady"] = "Global hotkeys are active.",
+            ["Main.StatusRefreshed"] = "Running window list refreshed.",
+            ["Main.StatusDuplicate"] = "Target already exists.",
+            ["Main.StatusAdded"] = "Target added: {0}",
+            ["Main.StatusRemoved"] = "Target removed: {0}",
+            ["Main.StatusNoTargets"] = "No target configured.",
+            ["Main.StatusHidden"] = "Hidden {0} window(s).",
+            ["Main.StatusNoMatched"] = "No matching windows to hide.",
+            ["Main.StatusShown"] = "Restored {0} window(s).",
+            ["Main.StatusNoHidden"] = "No hidden windows to restore.",
+            ["Main.StatusSaveFailed"] = "Save failed: {0}",
+            ["Main.StatusSettingsApplied"] = "Settings applied.",
+            ["Main.InitErrorTitle"] = "Error",
+            ["Main.InitErrorText"] = "Initialization failed: {0}",
+            ["Main.HintTitle"] = "Info",
+            ["Main.SelectRunningTarget"] = "Please select a running window first.",
+            ["Tray.ShowMain"] = "Show Main Window",
+            ["Tray.HideTargets"] = "Hide Targets",
+            ["Tray.ShowTargets"] = "Restore Targets",
+            ["Tray.Exit"] = "Exit",
+            ["Tray.MinimizedTitle"] = "HideProcess",
+            ["Tray.MinimizedText"] = "App is minimized to tray.",
+            ["Settings.Title"] = "Settings",
+            ["Settings.Header"] = "App Settings",
+            ["Settings.Hotkeys"] = "Hotkeys",
+            ["Settings.HideHotkey"] = "Hide Hotkey",
+            ["Settings.ShowHotkey"] = "Show Hotkey",
+            ["Settings.SetHotkey"] = "Set Hotkey",
+            ["Settings.General"] = "General",
+            ["Settings.StartWithWindows"] = "Start with Windows",
+            ["Settings.MinimizeToTray"] = "Minimize to tray when closing",
+            ["Settings.Language"] = "Language",
+            ["Settings.Import"] = "Import",
+            ["Settings.Export"] = "Export",
+            ["Settings.ImportSuccess"] = "Settings imported successfully.",
+            ["Settings.ExportSuccess"] = "Settings exported successfully.",
+            ["Settings.ImportFailed"] = "Import failed: {0}",
+            ["Settings.ExportFailed"] = "Export failed: {0}",
+            ["Settings.HotkeyWarningToggle"] = "Hide and show hotkeys are identical. Toggle mode is enabled.",
+            ["Settings.HotkeyWarningNoModifier"] = "{0} should include Ctrl/Alt/Shift/Win to avoid accidental trigger.",
+            ["Settings.HotkeyWarningReserved"] = "{0} may conflict with system shortcut: {1}",
+            ["Settings.Cancel"] = "Cancel",
+            ["Settings.Save"] = "Save",
+            ["Hotkey.TitleHide"] = "Set Hide Hotkey",
+            ["Hotkey.TitleShow"] = "Set Show Hotkey",
+            ["Hotkey.Title"] = "Hotkey Capture",
+            ["Hotkey.Instruction"] = "Press your preferred key combination, then click OK.",
+            ["Hotkey.Current"] = "Current Combination",
+            ["Hotkey.Clear"] = "Clear",
+            ["Hotkey.Ok"] = "OK",
+            ["Hotkey.Cancel"] = "Cancel",
+            ["Hotkey.Empty"] = "Please press at least one key."
+        }
+    };
+
+    static Localizer()
+    {
+        AddOrReplace("zh-CN", "Tray.CheckUpdates", "检查更新");
+        AddOrReplace("zh-CN", "Settings.AutoCheckUpdates", "启动时自动检查更新");
+        AddOrReplace("zh-CN", "Update.StatusChecking", "正在检查更新...");
+        AddOrReplace("zh-CN", "Update.StatusNoUpdate", "当前已是最新版本。");
+        AddOrReplace("zh-CN", "Update.NoUpdateTitle", "检查更新");
+        AddOrReplace("zh-CN", "Update.NoUpdateMessage", "当前版本 {0} 已是最新版本。");
+        AddOrReplace("zh-CN", "Update.StatusCheckFailed", "检查更新失败: {0}");
+        AddOrReplace("zh-CN", "Update.CheckFailedTitle", "更新失败");
+        AddOrReplace("zh-CN", "Update.CheckFailed", "无法检查更新: {0}");
+        AddOrReplace("zh-CN", "Update.StatusAvailable", "检测到新版本: {0}");
+        AddOrReplace("zh-CN", "Update.AvailableTitle", "发现新版本");
+        AddOrReplace("zh-CN", "Update.AvailablePrompt", "检测到新版本 {1}（当前 {0}）。\n是否立即下载并安装？");
+        AddOrReplace("zh-CN", "Update.ReleaseNotesLabel", "更新说明：");
+        AddOrReplace("zh-CN", "Update.NoInstallerAsset", "未找到可用的安装包资源。");
+        AddOrReplace("zh-CN", "Update.StatusOpenedReleasePage", "已打开发布页面。");
+        AddOrReplace("zh-CN", "Update.StatusDownloading", "正在下载更新安装包...");
+        AddOrReplace("zh-CN", "Update.StatusStartingInstaller", "已启动安装程序，即将退出当前应用。");
+        AddOrReplace("zh-CN", "Update.StatusDownloadFailed", "下载更新失败: {0}");
+        AddOrReplace("zh-CN", "Update.DownloadFailed", "下载或启动更新失败: {0}");
+
+        AddOrReplace("en-US", "Tray.CheckUpdates", "Check for Updates");
+        AddOrReplace("en-US", "Settings.AutoCheckUpdates", "Automatically check updates on startup");
+        AddOrReplace("en-US", "Update.StatusChecking", "Checking for updates...");
+        AddOrReplace("en-US", "Update.StatusNoUpdate", "You are using the latest version.");
+        AddOrReplace("en-US", "Update.NoUpdateTitle", "Check for Updates");
+        AddOrReplace("en-US", "Update.NoUpdateMessage", "Current version {0} is up to date.");
+        AddOrReplace("en-US", "Update.StatusCheckFailed", "Update check failed: {0}");
+        AddOrReplace("en-US", "Update.CheckFailedTitle", "Update Error");
+        AddOrReplace("en-US", "Update.CheckFailed", "Unable to check for updates: {0}");
+        AddOrReplace("en-US", "Update.StatusAvailable", "New version available: {0}");
+        AddOrReplace("en-US", "Update.AvailableTitle", "Update Available");
+        AddOrReplace("en-US", "Update.AvailablePrompt", "A newer version {1} is available (current: {0}).\nDownload and install now?");
+        AddOrReplace("en-US", "Update.ReleaseNotesLabel", "Release notes:");
+        AddOrReplace("en-US", "Update.NoInstallerAsset", "No installer asset was found in the latest release.");
+        AddOrReplace("en-US", "Update.StatusOpenedReleasePage", "Release page opened.");
+        AddOrReplace("en-US", "Update.StatusDownloading", "Downloading installer...");
+        AddOrReplace("en-US", "Update.StatusStartingInstaller", "Installer started. The app will now exit.");
+        AddOrReplace("en-US", "Update.StatusDownloadFailed", "Update download failed: {0}");
+        AddOrReplace("en-US", "Update.DownloadFailed", "Failed to download or start updater: {0}");
+    }
+
+    private static void AddOrReplace(string languageCode, string key, string value)
+    {
+        if (!Resources.TryGetValue(languageCode, out var languageResources))
+        {
+            return;
+        }
+
+        languageResources[key] = value;
+    }
+
+    public static IReadOnlyList<LanguageOption> SupportedLanguages { get; } =
+    [
+        new("zh-CN", "简体中文"),
+        new("en-US", "English")
+    ];
+
+    public static string CurrentLanguage { get; private set; } = DefaultLanguage;
+
+    public static event EventHandler? LanguageChanged;
+
+    public static void SetLanguage(string? languageCode)
+    {
+        var normalized = NormalizeLanguage(languageCode);
+        if (string.Equals(CurrentLanguage, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        CurrentLanguage = normalized;
+        LanguageChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    public static string NormalizeLanguage(string? languageCode)
+    {
+        if (!string.IsNullOrWhiteSpace(languageCode))
+        {
+            var exact = Resources.Keys.FirstOrDefault(key =>
+                string.Equals(key, languageCode, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(exact))
+            {
+                return exact;
+            }
+        }
+
+        return DefaultLanguage;
+    }
+
+    public static string T(string key)
+    {
+        return T(key, CurrentLanguage);
+    }
+
+    public static string T(string key, string? languageCode)
+    {
+        var lang = NormalizeLanguage(languageCode);
+        if (Resources.TryGetValue(lang, out var selected)
+            && selected.TryGetValue(key, out var value))
+        {
+            return value;
+        }
+
+        if (Resources[DefaultLanguage].TryGetValue(key, out var fallback))
+        {
+            return fallback;
+        }
+
+        return key;
+    }
+
+    public static string Format(string key, params object[] args)
+    {
+        return string.Format(CultureInfo.CurrentCulture, T(key), args);
+    }
+}
