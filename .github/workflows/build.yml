@@ -1,0 +1,97 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore HideProcess.sln
+
+      - name: Build
+        run: dotnet build HideProcess.sln -c Release --no-restore
+
+      - name: Publish Multi-File (self-contained)
+        run: >
+          dotnet publish .\HideProcess.App\HideProcess.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=false
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o .\artifacts\publish
+
+      - name: Publish Single-File (self-contained)
+        run: >
+          dotnet publish .\HideProcess.App\HideProcess.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o .\artifacts\singlefile
+
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Build Installer
+        shell: powershell
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            throw "ISCC.exe not found after installation."
+          }
+
+          & $iscc `
+            "/DSourceDir=$pwd\artifacts\publish" `
+            "/DSourceIcon=$pwd\HideProcess.App\Assets\HideProcess.ico" `
+            "/DOutputDir=$pwd\artifacts\installer" `
+            "$pwd\installer\HideProcess.iss"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hideprocess-win-x64
+          path: |
+            artifacts/publish/**
+            artifacts/singlefile/HideProcess.App.exe
+            artifacts/installer/HideProcess-Setup.exe
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/singlefile/HideProcess.App.exe
+            artifacts/installer/HideProcess-Setup.exe
