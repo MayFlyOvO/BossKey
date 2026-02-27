@@ -21,7 +21,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private const string AppName = "HideProcess.App";
     private const int MaxLogEntries = 300;
     private static readonly TimeSpan AutoUpdateCheckInterval = TimeSpan.FromHours(12);
-    private const string UpdateRepositoryOwner = "h-cui";
+    private const string UpdateRepositoryOwner = "MayFlyOvO";
     private const string UpdateRepositoryName = "HideProcess";
 
     private readonly JsonSettingsStore _settingsStore = new();
