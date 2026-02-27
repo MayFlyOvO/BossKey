@@ -1,4 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\build\Version.props" Condition="Exists('..\build\Version.props')" />
 
   <ItemGroup>
     <ProjectReference Include="..\HideProcess.Core\HideProcess.Core.csproj" />
@@ -16,10 +18,12 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\HideProcess.ico</ApplicationIcon>
-    <Version>1.0.4</Version>
-    <FileVersion>1.0.4.0</FileVersion>
-    <AssemblyVersion>1.0.4.0</AssemblyVersion>
-    <InformationalVersion>1.0.4</InformationalVersion>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.0.4</AppVersion>
+    <Version Condition="'$(Version)' == ''">$(AppVersion)</Version>
+    <FileVersion Condition="'$(FileVersion)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(AppVersion)', '^\d+\.\d+\.\d+$'))">$(AppVersion).0</FileVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(AppVersion)</FileVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(FileVersion)</AssemblyVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
     <UpdateChannel Condition="'$(UpdateChannel)' == ''">installer</UpdateChannel>
   </PropertyGroup>
 

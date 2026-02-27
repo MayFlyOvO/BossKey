@@ -2,6 +2,14 @@
 #define MyAppPublisher "HideProcess"
 #define MyAppExeName "HideProcess.App.exe"
 
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.4"
+#endif
+
+#ifndef OutputBaseName
+  #define OutputBaseName "HideProcess-Setup"
+#endif
+
 #ifndef SourceDir
   #error SourceDir is not defined.
 #endif
@@ -17,12 +25,12 @@
 [Setup]
 AppId={{9B52D2AF-4964-4A07-A212-3A9A9D22F6D9}
 AppName={#MyAppName}
-AppVersion=1.0.4
+AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=HideProcess-Setup
+OutputBaseFilename={#OutputBaseName}
 OutputDir={#OutputDir}
 Compression=lzma
 SolidCompression=yes
