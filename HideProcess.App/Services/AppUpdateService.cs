@@ -11,11 +11,13 @@ public sealed class AppUpdateService
     private readonly HttpClient _httpClient;
     private readonly string _owner;
     private readonly string _repo;
+    private readonly UpdatePackageType _packageType;
 
-    public AppUpdateService(string owner, string repo)
+    public AppUpdateService(string owner, string repo, UpdatePackageType packageType)
     {
         _owner = owner;
         _repo = repo;
+        _packageType = packageType;
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("HideProcess", "1.0"));
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
@@ -37,7 +39,7 @@ public sealed class AppUpdateService
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return BuildResultFromRelease(currentVersion, document.RootElement);
+        return BuildResultFromRelease(currentVersion, document.RootElement, _packageType);
     }
 
     private async Task<UpdateCheckResult> CheckForUpdatesFromReleaseListAsync(Version currentVersion, CancellationToken cancellationToken)
@@ -68,7 +70,7 @@ public sealed class AppUpdateService
                 continue;
             }
 
-            var candidate = BuildResultFromRelease(currentVersion, release);
+            var candidate = BuildResultFromRelease(currentVersion, release, _packageType);
             if (candidate.Status is UpdateCheckStatus.UpdateAvailable or UpdateCheckStatus.NoUpdate)
             {
                 return candidate;
@@ -78,7 +80,7 @@ public sealed class AppUpdateService
         return UpdateCheckResult.NoUpdate(currentVersion, currentVersion);
     }
 
-    private static UpdateCheckResult BuildResultFromRelease(Version currentVersion, JsonElement release)
+    private static UpdateCheckResult BuildResultFromRelease(Version currentVersion, JsonElement release, UpdatePackageType packageType)
     {
         var tagName = GetString(release, "tag_name");
         if (!TryParseVersion(tagName, out var latestVersion))
@@ -88,7 +90,7 @@ public sealed class AppUpdateService
 
         var releasePageUrl = GetString(release, "html_url");
         var releaseNotes = GetString(release, "body");
-        var downloadUrl = ResolveInstallerDownloadUrl(release);
+        var downloadUrl = ResolveDownloadUrl(release, packageType);
 
         if (latestVersion <= currentVersion)
         {
@@ -121,7 +123,10 @@ public sealed class AppUpdateService
         }
 
         var safeTag = SanitizeFileName(versionTag);
-        var filePath = Path.Combine(updatesDir, $"HideProcess-Setup-{safeTag}{extension}");
+        var packageName = _packageType == UpdatePackageType.SingleFile
+            ? "HideProcess-SingleFile"
+            : "HideProcess-Setup";
+        var filePath = Path.Combine(updatesDir, $"{packageName}-{safeTag}{extension}");
 
         using var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
@@ -171,13 +176,15 @@ public sealed class AppUpdateService
         return false;
     }
 
-    private static string? ResolveInstallerDownloadUrl(JsonElement root)
+    private static string? ResolveDownloadUrl(JsonElement root, UpdatePackageType packageType)
     {
         if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
         {
             return null;
         }
 
+        string? installerAsset = null;
+        string? singleFileAsset = null;
         string? fallbackExe = null;
         foreach (var asset in assets.EnumerateArray())
         {
@@ -188,17 +195,32 @@ public sealed class AppUpdateService
                 continue;
             }
 
-            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
-                fallbackExe ??= url;
-                if (name.Contains("setup", StringComparison.OrdinalIgnoreCase))
-                {
-                    return url;
-                }
+                continue;
             }
+
+            fallbackExe ??= url;
+            if (IsInstallerAsset(name))
+            {
+                installerAsset ??= url;
+                continue;
+            }
+
+            singleFileAsset ??= url;
         }
 
-        return fallbackExe;
+        return packageType switch
+        {
+            UpdatePackageType.SingleFile => singleFileAsset ?? installerAsset ?? fallbackExe,
+            _ => installerAsset ?? singleFileAsset ?? fallbackExe
+        };
+    }
+
+    private static bool IsInstallerAsset(string assetName)
+    {
+        return assetName.Contains("setup", StringComparison.OrdinalIgnoreCase)
+               || assetName.Contains("installer", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string SanitizeFileName(string input)
@@ -214,6 +236,12 @@ public enum UpdateCheckStatus
     NoUpdate,
     UpdateAvailable,
     Failed
+}
+
+public enum UpdatePackageType
+{
+    Installer,
+    SingleFile
 }
 
 public sealed record UpdateCheckResult(

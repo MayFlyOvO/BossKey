@@ -17,7 +17,7 @@
 [Setup]
 AppId={{9B52D2AF-4964-4A07-A212-3A9A9D22F6D9}
 AppName={#MyAppName}
-AppVersion=1.0.0
+AppVersion=1.0.2
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}

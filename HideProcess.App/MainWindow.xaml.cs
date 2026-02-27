@@ -28,7 +28,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly AutoStartService _autoStartService = new();
     private readonly ProcessWindowService _processWindowService = new();
     private readonly GlobalHotkeyService _globalHotkeyService = new();
-    private readonly AppUpdateService _appUpdateService = new(UpdateRepositoryOwner, UpdateRepositoryName);
+    private readonly AppUpdateService _appUpdateService;
     private readonly ObservableCollection<RunningTargetItem> _runningTargets = [];
     private readonly ObservableCollection<TargetAppConfig> _selectedTargets = [];
     private readonly ObservableCollection<string> _logs = [];
@@ -45,6 +45,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public MainWindow()
     {
         InitializeComponent();
+        _appUpdateService = new AppUpdateService(
+            UpdateRepositoryOwner,
+            UpdateRepositoryName,
+            ResolveUpdatePackageType());
 
         DataContext = this;
         RunningTargetsComboBox.ItemsSource = _runningTargets;
@@ -753,6 +757,46 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var build = version.Build < 0 ? 0 : version.Build;
         var revision = version.Revision < 0 ? 0 : version.Revision;
         return new Version(version.Major, version.Minor, build, revision);
+    }
+
+    private static UpdatePackageType ResolveUpdatePackageType()
+    {
+        var metadataType = GetAssemblyMetadataValue("UpdateChannel");
+        if (string.Equals(metadataType, "singlefile", StringComparison.OrdinalIgnoreCase))
+        {
+            return UpdatePackageType.SingleFile;
+        }
+
+        if (string.Equals(metadataType, "installer", StringComparison.OrdinalIgnoreCase))
+        {
+            return UpdatePackageType.Installer;
+        }
+
+        if (AppContext.GetData("IsSingleFile") is bool isSingleFile && isSingleFile)
+        {
+            return UpdatePackageType.SingleFile;
+        }
+
+        return UpdatePackageType.Installer;
+    }
+
+    private static string? GetAssemblyMetadataValue(string key)
+    {
+        var assembly = Assembly.GetEntryAssembly();
+        if (assembly is null)
+        {
+            return null;
+        }
+
+        foreach (var attribute in assembly.GetCustomAttributes<AssemblyMetadataAttribute>())
+        {
+            if (string.Equals(attribute.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return attribute.Value;
+            }
+        }
+
+        return null;
     }
 
     private void SaveCurrentWindowPlacement()

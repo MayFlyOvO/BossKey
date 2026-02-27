@@ -36,6 +36,7 @@ dotnet publish "%APP_PROJECT%" ^
   -r %RID% ^
   --self-contained true ^
   -p:PublishSingleFile=false ^
+  -p:UpdateChannel=installer ^
   -p:DebugType=None ^
   -p:DebugSymbols=false ^
   -o "%PUBLISH_OUT%"
@@ -48,6 +49,7 @@ dotnet publish "%APP_PROJECT%" ^
   --self-contained true ^
   -p:PublishSingleFile=true ^
   -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:UpdateChannel=singlefile ^
   -p:DebugType=None ^
   -p:DebugSymbols=false ^
   -o "%SINGLE_OUT%"

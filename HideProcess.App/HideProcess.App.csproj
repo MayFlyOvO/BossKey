@@ -16,6 +16,18 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\HideProcess.ico</ApplicationIcon>
+    <Version>1.0.2</Version>
+    <FileVersion>1.0.2.0</FileVersion>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <InformationalVersion>1.0.2</InformationalVersion>
+    <UpdateChannel Condition="'$(UpdateChannel)' == ''">installer</UpdateChannel>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(UpdateChannel)' != ''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>UpdateChannel</_Parameter1>
+      <_Parameter2>$(UpdateChannel)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 
 </Project>
