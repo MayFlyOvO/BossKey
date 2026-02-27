@@ -28,6 +28,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly AutoStartService _autoStartService = new();
     private readonly ProcessWindowService _processWindowService = new();
     private readonly GlobalHotkeyService _globalHotkeyService = new();
+    private readonly UpdatePackageType _currentPackageType;
     private readonly AppUpdateService _appUpdateService;
     private readonly ObservableCollection<RunningTargetItem> _runningTargets = [];
     private readonly ObservableCollection<TargetAppConfig> _selectedTargets = [];
@@ -40,15 +41,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _allowClose;
     private bool _isCheckingUpdates;
     private bool _isLogCollapsed;
+    private Visibility _updateDownloadOverlayVisibility = Visibility.Collapsed;
+    private string _updateDownloadProgressText = "0%";
+    private string _updateDownloadArcData = string.Empty;
+    private string _updateDownloadTitleText = string.Empty;
     private string _removeButtonText = "Remove";
 
     public MainWindow()
     {
         InitializeComponent();
+        _currentPackageType = ResolveUpdatePackageType();
         _appUpdateService = new AppUpdateService(
             UpdateRepositoryOwner,
             UpdateRepositoryName,
-            ResolveUpdatePackageType());
+            _currentPackageType);
 
         DataContext = this;
         RunningTargetsComboBox.ItemsSource = _runningTargets;
@@ -80,6 +86,66 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     public ObservableCollection<string> LogEntries => _logs;
+
+    public Visibility UpdateDownloadOverlayVisibility
+    {
+        get => _updateDownloadOverlayVisibility;
+        private set
+        {
+            if (_updateDownloadOverlayVisibility == value)
+            {
+                return;
+            }
+
+            _updateDownloadOverlayVisibility = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateDownloadOverlayVisibility)));
+        }
+    }
+
+    public string UpdateDownloadProgressText
+    {
+        get => _updateDownloadProgressText;
+        private set
+        {
+            if (string.Equals(_updateDownloadProgressText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _updateDownloadProgressText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateDownloadProgressText)));
+        }
+    }
+
+    public string UpdateDownloadArcData
+    {
+        get => _updateDownloadArcData;
+        private set
+        {
+            if (string.Equals(_updateDownloadArcData, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _updateDownloadArcData = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateDownloadArcData)));
+        }
+    }
+
+    public string UpdateDownloadTitleText
+    {
+        get => _updateDownloadTitleText;
+        private set
+        {
+            if (string.Equals(_updateDownloadTitleText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _updateDownloadTitleText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateDownloadTitleText)));
+        }
+    }
 
     private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -537,6 +603,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             : "静音";
         ActionColumn.Header = Localizer.T("Main.ActionColumn");
         RemoveButtonText = Localizer.T("Main.Remove");
+        UpdateDownloadTitleText = Localizer.T("Update.ProgressTitle");
 
         var hideKeys = _settings.HideHotkey.GetNormalizedKeys();
         var showKeys = _settings.ShowHotkey.GetNormalizedKeys();
@@ -723,7 +790,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             try
             {
                 SetStatus(Localizer.T("Update.StatusDownloading"));
-                var installerPath = await _appUpdateService.DownloadInstallerAsync(result.InstallerDownloadUrl, result.ReleaseTag);
+                ShowUpdateDownloadOverlay();
+                var progress = new Progress<double>(UpdateDownloadProgress);
+                var installerPath = await _appUpdateService.DownloadInstallerAsync(result.InstallerDownloadUrl, result.ReleaseTag, progress);
+                if (_currentPackageType == UpdatePackageType.SingleFile)
+                {
+                    BeginSingleFileSelfUpdate(installerPath);
+                    SetStatus(Localizer.T("Update.StatusApplyingSingleFile"));
+                    _allowClose = true;
+                    Close();
+                    return;
+                }
+
                 Process.Start(new ProcessStartInfo(installerPath) { UseShellExecute = true });
                 SetStatus(Localizer.T("Update.StatusStartingInstaller"));
                 _allowClose = true;
@@ -731,6 +809,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
             catch (Exception ex)
             {
+                HideUpdateDownloadOverlay();
                 SetStatus(Localizer.Format("Update.StatusDownloadFailed", ex.Message));
                 System.Windows.MessageBox.Show(
                     dialogOwner ?? this,
@@ -797,6 +876,93 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         return null;
+    }
+
+    private void ShowUpdateDownloadOverlay()
+    {
+        UpdateDownloadProgress(0d);
+        UpdateDownloadOverlayVisibility = Visibility.Visible;
+    }
+
+    private void HideUpdateDownloadOverlay()
+    {
+        UpdateDownloadOverlayVisibility = Visibility.Collapsed;
+        UpdateDownloadProgress(0d);
+    }
+
+    private void UpdateDownloadProgress(double value)
+    {
+        var progress = Math.Clamp(value, 0d, 1d);
+        UpdateDownloadProgressText = $"{Math.Round(progress * 100):0}%";
+        UpdateDownloadArcData = BuildProgressArcData(progress);
+    }
+
+    private static string BuildProgressArcData(double progress)
+    {
+        const double center = 60d;
+        const double radius = 52d;
+
+        if (progress <= 0d)
+        {
+            return string.Empty;
+        }
+
+        if (progress >= 0.9999d)
+        {
+            return $"M {center},{center - radius} A {radius},{radius} 0 1 1 {center},{center + radius} A {radius},{radius} 0 1 1 {center},{center - radius}";
+        }
+
+        var angle = -90d + progress * 360d;
+        var radians = angle * Math.PI / 180d;
+        var endX = center + radius * Math.Cos(radians);
+        var endY = center + radius * Math.Sin(radians);
+        var largeArcFlag = progress >= 0.5d ? 1 : 0;
+
+        return $"M {center},{center - radius} A {radius},{radius} 0 {largeArcFlag} 1 {endX:F3},{endY:F3}";
+    }
+
+    private static void BeginSingleFileSelfUpdate(string downloadedExecutablePath)
+    {
+        var currentExecutablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(currentExecutablePath))
+        {
+            throw new InvalidOperationException("Current executable path is unavailable.");
+        }
+
+        var updatesDirectory = Path.Combine(Path.GetTempPath(), "HideProcess", "Updates");
+        Directory.CreateDirectory(updatesDirectory);
+
+        var scriptPath = Path.Combine(updatesDirectory, $"apply-update-{Guid.NewGuid():N}.cmd");
+        var scriptContent = string.Join(
+            Environment.NewLine,
+            "@echo off",
+            "setlocal",
+            $"set \"SOURCE={EscapeBatchValue(downloadedExecutablePath)}\"",
+            $"set \"TARGET={EscapeBatchValue(currentExecutablePath)}\"",
+            ":replace",
+            "move /Y \"%SOURCE%\" \"%TARGET%\" >nul 2>&1",
+            "if errorlevel 1 (",
+            "  timeout /t 1 /nobreak >nul",
+            "  goto replace",
+            ")",
+            "start \"\" \"%TARGET%\"",
+            "del \"%~f0\"");
+
+        File.WriteAllText(scriptPath, scriptContent);
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/c \"\"{scriptPath}\"\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        });
+    }
+
+    private static string EscapeBatchValue(string value)
+    {
+        return value.Replace("%", "%%", StringComparison.Ordinal);
     }
 
     private void SaveCurrentWindowPlacement()

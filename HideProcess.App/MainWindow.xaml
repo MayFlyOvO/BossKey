@@ -788,5 +788,51 @@
                 </Grid>
             </Grid>
         </Border>
+
+        <Grid Visibility="{Binding UpdateDownloadOverlayVisibility}"
+              Background="#66F3F6FA"
+              Panel.ZIndex="20">
+            <Border Width="248"
+                    Height="248"
+                    Padding="24"
+                    Background="#FDFEFF"
+                    BorderBrush="#FFDCE5F0"
+                    BorderThickness="1"
+                    CornerRadius="28"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Grid Width="120"
+                          Height="120"
+                          HorizontalAlignment="Center">
+                        <Ellipse Stroke="#FFE4EAF3"
+                                 StrokeThickness="8" />
+                        <Path Data="{Binding UpdateDownloadArcData}"
+                              Stroke="#FF0A84FF"
+                              StrokeThickness="8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" />
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="{Binding UpdateDownloadProgressText}"
+                                       FontSize="24"
+                                       FontWeight="SemiBold"
+                                       Foreground="#102A43"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="%"
+                                       Visibility="Collapsed" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Margin="0,18,0,0"
+                               Text="{Binding UpdateDownloadTitleText}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#334155"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

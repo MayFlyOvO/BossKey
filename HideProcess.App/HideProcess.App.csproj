@@ -16,10 +16,10 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\HideProcess.ico</ApplicationIcon>
-    <Version>1.0.3</Version>
-    <FileVersion>1.0.3.0</FileVersion>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <InformationalVersion>1.0.3</InformationalVersion>
+    <Version>1.0.4</Version>
+    <FileVersion>1.0.4.0</FileVersion>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <InformationalVersion>1.0.4</InformationalVersion>
     <UpdateChannel Condition="'$(UpdateChannel)' == ''">installer</UpdateChannel>
   </PropertyGroup>
 

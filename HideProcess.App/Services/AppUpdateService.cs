@@ -152,7 +152,11 @@ public sealed class AppUpdateService
             downloadUrl);
     }
 
-    public async Task<string> DownloadInstallerAsync(string downloadUrl, string versionTag, CancellationToken cancellationToken = default)
+    public async Task<string> DownloadInstallerAsync(
+        string downloadUrl,
+        string versionTag,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         var updatesDir = Path.Combine(Path.GetTempPath(), "HideProcess", "Updates");
         Directory.CreateDirectory(updatesDir);
@@ -177,9 +181,24 @@ public sealed class AppUpdateService
         using var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
+        var totalBytes = response.Content.Headers.ContentLength;
         await using var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         await using var destination = File.Create(filePath);
-        await source.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+        var buffer = new byte[81920];
+        long totalRead = 0;
+        int bytesRead;
+        progress?.Report(0d);
+        while ((bytesRead = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+            totalRead += bytesRead;
+            if (totalBytes is > 0)
+            {
+                progress?.Report(Math.Clamp((double)totalRead / totalBytes.Value, 0d, 1d));
+            }
+        }
+
+        progress?.Report(1d);
         return filePath;
     }
 
