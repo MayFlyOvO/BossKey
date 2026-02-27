@@ -12,38 +12,54 @@ public enum HotkeyAction
     Toggle
 }
 
+public sealed record HotkeyRouteBinding(
+    string RouteId,
+    HotkeyBinding HideBinding,
+    HotkeyBinding ShowBinding);
+
+public sealed class HotkeyTriggeredEventArgs(string routeId, HotkeyAction action) : EventArgs
+{
+    public string RouteId { get; } = routeId;
+    public HotkeyAction Action { get; } = action;
+}
+
 public sealed class GlobalHotkeyService : IDisposable
 {
     private readonly HashSet<int> _pressedKeys = [];
     private readonly object _syncLock = new();
     private readonly HashSet<int> _activeSuppressedChord = [];
+    private readonly List<RouteState> _routes = [];
     private NativeMethods.LowLevelKeyboardProc? _hookProc;
     private IntPtr _hookHandle;
-    private HashSet<int> _hideKeys = [];
-    private HashSet<int> _showKeys = [];
-    private HashSet<int> _toggleKeys = [];
-    private bool _useToggleMode;
-    private bool _hideFired;
-    private bool _showFired;
-    private bool _toggleFired;
     private bool _disposed;
 
-    public event EventHandler<HotkeyAction>? HotkeyTriggered;
+    public event EventHandler<HotkeyTriggeredEventArgs>? HotkeyTriggered;
 
     // Default true: once hotkey triggers, swallow the chord so it does not propagate to system/app.
     public bool SuppressTriggeredHotkeys { get; set; } = true;
 
     public void UpdateBindings(HotkeyBinding hideBinding, HotkeyBinding showBinding)
     {
+        UpdateBindings([new HotkeyRouteBinding("default", hideBinding, showBinding)]);
+    }
+
+    public void UpdateBindings(IEnumerable<HotkeyRouteBinding> bindings)
+    {
         lock (_syncLock)
         {
-            _hideKeys = hideBinding.GetNormalizedKeys();
-            _showKeys = showBinding.GetNormalizedKeys();
-            _useToggleMode = _hideKeys.Count > 0 && _hideKeys.SetEquals(_showKeys);
-            _toggleKeys = _useToggleMode ? _hideKeys : [];
-            _hideFired = false;
-            _showFired = false;
-            _toggleFired = false;
+            _routes.Clear();
+            foreach (var binding in bindings)
+            {
+                var hideKeys = binding.HideBinding.GetNormalizedKeys();
+                var showKeys = binding.ShowBinding.GetNormalizedKeys();
+                var useToggleMode = hideKeys.Count > 0 && hideKeys.SetEquals(showKeys);
+                _routes.Add(new RouteState(
+                    binding.RouteId,
+                    hideKeys,
+                    showKeys,
+                    useToggleMode ? hideKeys : []));
+            }
+
             _pressedKeys.Clear();
             _activeSuppressedChord.Clear();
         }
@@ -79,9 +95,12 @@ public sealed class GlobalHotkeyService : IDisposable
         {
             _pressedKeys.Clear();
             _activeSuppressedChord.Clear();
-            _hideFired = false;
-            _showFired = false;
-            _toggleFired = false;
+            foreach (var route in _routes)
+            {
+                route.HideFired = false;
+                route.ShowFired = false;
+                route.ToggleFired = false;
+            }
         }
     }
 
@@ -120,11 +139,11 @@ public sealed class GlobalHotkeyService : IDisposable
             if (isKeyDown)
             {
                 _pressedKeys.Add(key);
-                var action = EvaluateHotkeys();
-                if (action.HasValue && SuppressTriggeredHotkeys)
+                var trigger = EvaluateHotkeys();
+                if (trigger is not null && SuppressTriggeredHotkeys)
                 {
                     _activeSuppressedChord.Clear();
-                    _activeSuppressedChord.UnionWith(GetActionKeys(action.Value));
+                    _activeSuppressedChord.UnionWith(trigger.Route.GetActionKeys(trigger.Action));
                     shouldSuppress = true;
                 }
             }
@@ -155,32 +174,35 @@ public sealed class GlobalHotkeyService : IDisposable
             : NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
     }
 
-    private HotkeyAction? EvaluateHotkeys()
+    private HotkeyTrigger? EvaluateHotkeys()
     {
-        if (_useToggleMode)
+        foreach (var route in _routes)
         {
-            if (IsMatch(_toggleKeys) && !_toggleFired)
+            if (route.UseToggleMode)
             {
-                _toggleFired = true;
-                HotkeyTriggered?.Invoke(this, HotkeyAction.Toggle);
-                return HotkeyAction.Toggle;
+                if (IsMatch(route.ToggleKeys) && !route.ToggleFired)
+                {
+                    route.ToggleFired = true;
+                    HotkeyTriggered?.Invoke(this, new HotkeyTriggeredEventArgs(route.RouteId, HotkeyAction.Toggle));
+                    return new HotkeyTrigger(route, HotkeyAction.Toggle);
+                }
+
+                continue;
             }
 
-            return null;
-        }
+            if (IsMatch(route.HideKeys) && !route.HideFired)
+            {
+                route.HideFired = true;
+                HotkeyTriggered?.Invoke(this, new HotkeyTriggeredEventArgs(route.RouteId, HotkeyAction.Hide));
+                return new HotkeyTrigger(route, HotkeyAction.Hide);
+            }
 
-        if (IsMatch(_hideKeys) && !_hideFired)
-        {
-            _hideFired = true;
-            HotkeyTriggered?.Invoke(this, HotkeyAction.Hide);
-            return HotkeyAction.Hide;
-        }
-
-        if (IsMatch(_showKeys) && !_showFired)
-        {
-            _showFired = true;
-            HotkeyTriggered?.Invoke(this, HotkeyAction.Show);
-            return HotkeyAction.Show;
+            if (IsMatch(route.ShowKeys) && !route.ShowFired)
+            {
+                route.ShowFired = true;
+                HotkeyTriggered?.Invoke(this, new HotkeyTriggeredEventArgs(route.RouteId, HotkeyAction.Show));
+                return new HotkeyTrigger(route, HotkeyAction.Show);
+            }
         }
 
         return null;
@@ -188,24 +210,27 @@ public sealed class GlobalHotkeyService : IDisposable
 
     private void ResetFireFlagsWhenChordBroken()
     {
-        if (_useToggleMode)
+        foreach (var route in _routes)
         {
-            if (!IsMatch(_toggleKeys))
+            if (route.UseToggleMode)
             {
-                _toggleFired = false;
+                if (!IsMatch(route.ToggleKeys))
+                {
+                    route.ToggleFired = false;
+                }
+
+                continue;
             }
 
-            return;
-        }
+            if (!IsMatch(route.HideKeys))
+            {
+                route.HideFired = false;
+            }
 
-        if (!IsMatch(_hideKeys))
-        {
-            _hideFired = false;
-        }
-
-        if (!IsMatch(_showKeys))
-        {
-            _showFired = false;
+            if (!IsMatch(route.ShowKeys))
+            {
+                route.ShowFired = false;
+            }
         }
     }
 
@@ -215,19 +240,41 @@ public sealed class GlobalHotkeyService : IDisposable
         return targetKeys.Count > 0 && targetKeys.IsSubsetOf(_pressedKeys);
     }
 
-    private HashSet<int> GetActionKeys(HotkeyAction action)
-    {
-        return action switch
-        {
-            HotkeyAction.Hide => _useToggleMode ? _toggleKeys : _hideKeys,
-            HotkeyAction.Show => _showKeys,
-            HotkeyAction.Toggle => _toggleKeys,
-            _ => []
-        };
-    }
-
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
+    private sealed class RouteState(
+        string routeId,
+        HashSet<int> hideKeys,
+        HashSet<int> showKeys,
+        HashSet<int> toggleKeys)
+    {
+        public string RouteId { get; } = routeId;
+        public HashSet<int> HideKeys { get; } = hideKeys;
+        public HashSet<int> ShowKeys { get; } = showKeys;
+        public HashSet<int> ToggleKeys { get; } = toggleKeys;
+        public bool UseToggleMode { get; } = toggleKeys.Count > 0;
+        public bool HideFired { get; set; }
+        public bool ShowFired { get; set; }
+        public bool ToggleFired { get; set; }
+
+        public HashSet<int> GetActionKeys(HotkeyAction action)
+        {
+            return action switch
+            {
+                HotkeyAction.Hide => UseToggleMode ? ToggleKeys : HideKeys,
+                HotkeyAction.Show => ShowKeys,
+                HotkeyAction.Toggle => ToggleKeys,
+                _ => []
+            };
+        }
+    }
+
+    private sealed class HotkeyTrigger(RouteState route, HotkeyAction action)
+    {
+        public RouteState Route { get; } = route;
+        public HotkeyAction Action { get; } = action;
     }
 }

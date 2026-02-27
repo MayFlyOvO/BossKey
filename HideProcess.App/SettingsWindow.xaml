@@ -2,10 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        Width="700"
-        Height="560"
+        Width="720"
+        Height="760"
         MinWidth="680"
-        MinHeight="540"
+        MinHeight="720"
         WindowStyle="None"
         Icon="pack://application:,,,/Assets/HideProcess.ico"
         ResizeMode="NoResize"
@@ -328,7 +328,12 @@
                     </StackPanel>
                 </Grid>
 
-                <StackPanel Grid.Row="1" Margin="16,14,16,0">
+                <ScrollViewer Grid.Row="1"
+                              Margin="16,14,16,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False">
+                    <StackPanel Margin="0,0,2,0">
                     <Border Margin="0,0,0,14"
                             Padding="16"
                             CornerRadius="12"
@@ -439,6 +444,125 @@
                         </Grid>
                     </Border>
 
+                    <Border Margin="0,0,0,14"
+                            Padding="16"
+                            CornerRadius="12"
+                            Background="#FFFAFBFD"
+                            BorderThickness="1"
+                            BorderBrush="#FFE9EDF3">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="130" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="GroupHotkeysSectionTextBlock"
+                                       Grid.ColumnSpan="3"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#334155" />
+
+                            <TextBlock x:Name="GroupHotkeyTargetLabel"
+                                       Grid.Row="1"
+                                       Margin="0,14,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#4A5560" />
+                            <ComboBox x:Name="GroupHotkeyComboBox"
+                                      Grid.Row="1"
+                                      Grid.Column="1"
+                                      Grid.ColumnSpan="2"
+                                      Margin="0,14,0,0"
+                                      Height="40"
+                                      Style="{StaticResource RoundedComboBoxStyle}"
+                                      ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
+                                      DisplayMemberPath="DisplayName"
+                                      VerticalContentAlignment="Center"
+                                      SelectionChanged="GroupHotkeyComboBox_OnSelectionChanged" />
+
+                            <TextBlock x:Name="GroupHideHotkeyLabel"
+                                       Grid.Row="2"
+                                       Margin="0,12,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#4A5560" />
+                            <Border Grid.Row="2"
+                                    Grid.Column="1"
+                                    Margin="0,12,12,0"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#FFFFFFFF"
+                                    BorderThickness="1"
+                                    BorderBrush="#FFE4E7EB">
+                                <TextBlock x:Name="GroupHideHotkeyValueTextBlock"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#1F2933" />
+                            </Border>
+                            <Button x:Name="SetGroupHideHotkeyButton"
+                                    Grid.Row="2"
+                                    Grid.Column="2"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource NeutralButtonStyle}"
+                                    Click="SetGroupHideHotkeyButton_OnClick">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE70F;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="SetGroupHideHotkeyButtonTextBlock"
+                                               Margin="6,0,0,0"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <TextBlock x:Name="GroupShowHotkeyLabel"
+                                       Grid.Row="3"
+                                       Margin="0,12,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#4A5560" />
+                            <Border Grid.Row="3"
+                                    Grid.Column="1"
+                                    Margin="0,12,12,0"
+                                    Padding="10,8"
+                                    CornerRadius="8"
+                                    Background="#FFFFFFFF"
+                                    BorderThickness="1"
+                                    BorderBrush="#FFE4E7EB">
+                                <TextBlock x:Name="GroupShowHotkeyValueTextBlock"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#1F2933" />
+                            </Border>
+                            <Button x:Name="SetGroupShowHotkeyButton"
+                                    Grid.Row="3"
+                                    Grid.Column="2"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource NeutralButtonStyle}"
+                                    Click="SetGroupShowHotkeyButton_OnClick">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE70F;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="SetGroupShowHotkeyButtonTextBlock"
+                                               Margin="6,0,0,0"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
                     <Border Padding="16"
                             CornerRadius="12"
                             Background="#FFFAFBFD"
@@ -514,7 +638,8 @@
                                       SelectionChanged="LanguageComboBox_OnSelectionChanged" />
                         </Grid>
                     </Border>
-                </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Grid Grid.Row="2" Margin="16,14,16,14">
                     <Grid.ColumnDefinitions>

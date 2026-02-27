@@ -1,14 +1,19 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using HideProcess.App.Services;
 using HideProcess.App.Localization;
+using HideProcess.App.Models;
 using HideProcess.Core.Models;
 using HideProcess.Core.Services;
 using Drawing = System.Drawing;
@@ -19,6 +24,10 @@ namespace HideProcess.App;
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
     private const string AppName = "HideProcess.App";
+    private const string AllTargetsRouteId = "__all__";
+    private const string TargetTileDragFormat = "HideProcess.TargetTile";
+    private const double TargetTileAutoScrollEdgeThreshold = 72d;
+    private const double TargetTileAutoScrollMaxSpeed = 18d;
     private const int MaxLogEntries = 300;
     private static readonly TimeSpan AutoUpdateCheckInterval = TimeSpan.FromHours(12);
     private const string UpdateRepositoryOwner = "MayFlyOvO";
@@ -32,8 +41,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly GlobalHotkeyService _globalHotkeyService = new();
     private readonly UpdatePackageType _currentPackageType;
     private readonly AppUpdateService _appUpdateService;
+    private readonly AppIconService _appIconService = new();
     private readonly ObservableCollection<RunningTargetItem> _runningTargets = [];
-    private readonly ObservableCollection<TargetAppConfig> _selectedTargets = [];
+    private readonly ObservableCollection<TargetGroupViewModel> _groupCards = [];
+    private readonly ObservableCollection<TargetGroupViewModel> _visibleGroupCards = [];
+    private readonly ObservableCollection<TargetTileViewModel> _emptyUngroupedTargets = [];
     private readonly ObservableCollection<string> _logs = [];
 
     private HwndSource? _hwndSource;
@@ -44,11 +56,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isClosing;
     private bool _isCheckingUpdates;
     private bool _isLogCollapsed;
+    private TargetGroupViewModel? _defaultGroupCard;
     private Visibility _updateDownloadOverlayVisibility = Visibility.Collapsed;
     private string _updateDownloadProgressText = "0%";
     private string _updateDownloadArcData = string.Empty;
     private string _updateDownloadTitleText = string.Empty;
     private string _removeButtonText = "Remove";
+    private System.Windows.Point? _dragStartPoint;
+    private System.Windows.Point? _dragScrollViewerPosition;
+    private string _newGroupButtonText = "New Group";
+    private string _targetEnabledText = "Enabled";
+    private string _targetMuteOnHideText = "Mute on hide";
+    private string _renameGroupText = "Rename group";
+    private string _deleteGroupText = "Delete group";
+    private string _toggleGroupText = "Collapse or expand group";
+    private string _setGroupHideHotkeyText = "Set group hide hotkey";
+    private string _setGroupShowHotkeyText = "Set group show hotkey";
+    private string _emptyGroupHintText = "Drag apps here";
+    private string _ungroupedDropHintText = "Drop here to remove from group";
+    private readonly DispatcherTimer _targetTileAutoScrollTimer;
+    private TargetTileDragPreviewWindow? _targetTileDragPreviewWindow;
 
     public MainWindow()
     {
@@ -62,7 +89,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         DataContext = this;
         RunningTargetsComboBox.ItemsSource = _runningTargets;
-        SelectedTargetsDataGrid.ItemsSource = _selectedTargets;
+        _targetTileAutoScrollTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(16),
+            DispatcherPriority.Input,
+            TargetTileAutoScrollTimer_OnTick,
+            Dispatcher);
 
         Loaded += MainWindow_OnLoaded;
         SourceInitialized += MainWindow_OnSourceInitialized;
@@ -90,7 +121,160 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    public string NewGroupButtonText
+    {
+        get => _newGroupButtonText;
+        private set
+        {
+            if (string.Equals(_newGroupButtonText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _newGroupButtonText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NewGroupButtonText)));
+        }
+    }
+
     public ObservableCollection<string> LogEntries => _logs;
+    public ObservableCollection<TargetGroupViewModel> GroupCards => _groupCards;
+    public ObservableCollection<TargetGroupViewModel> VisibleGroupCards => _visibleGroupCards;
+    public ObservableCollection<TargetTileViewModel> UngroupedTargets => _defaultGroupCard?.Targets ?? _emptyUngroupedTargets;
+
+    public string TargetEnabledText
+    {
+        get => _targetEnabledText;
+        private set
+        {
+            if (string.Equals(_targetEnabledText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _targetEnabledText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TargetEnabledText)));
+        }
+    }
+
+    public string TargetMuteOnHideText
+    {
+        get => _targetMuteOnHideText;
+        private set
+        {
+            if (string.Equals(_targetMuteOnHideText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _targetMuteOnHideText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TargetMuteOnHideText)));
+        }
+    }
+
+    public string RenameGroupText
+    {
+        get => _renameGroupText;
+        private set
+        {
+            if (string.Equals(_renameGroupText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _renameGroupText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RenameGroupText)));
+        }
+    }
+
+    public string DeleteGroupText
+    {
+        get => _deleteGroupText;
+        private set
+        {
+            if (string.Equals(_deleteGroupText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _deleteGroupText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DeleteGroupText)));
+        }
+    }
+
+    public string ToggleGroupText
+    {
+        get => _toggleGroupText;
+        private set
+        {
+            if (string.Equals(_toggleGroupText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _toggleGroupText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ToggleGroupText)));
+        }
+    }
+
+    public string SetGroupHideHotkeyText
+    {
+        get => _setGroupHideHotkeyText;
+        private set
+        {
+            if (string.Equals(_setGroupHideHotkeyText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _setGroupHideHotkeyText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SetGroupHideHotkeyText)));
+        }
+    }
+
+    public string SetGroupShowHotkeyText
+    {
+        get => _setGroupShowHotkeyText;
+        private set
+        {
+            if (string.Equals(_setGroupShowHotkeyText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _setGroupShowHotkeyText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SetGroupShowHotkeyText)));
+        }
+    }
+
+    public string EmptyGroupHintText
+    {
+        get => _emptyGroupHintText;
+        private set
+        {
+            if (string.Equals(_emptyGroupHintText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _emptyGroupHintText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EmptyGroupHintText)));
+        }
+    }
+
+    public string UngroupedDropHintText
+    {
+        get => _ungroupedDropHintText;
+        private set
+        {
+            if (string.Equals(_ungroupedDropHintText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _ungroupedDropHintText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UngroupedDropHintText)));
+        }
+    }
 
     public Visibility UpdateDownloadOverlayVisibility
     {
@@ -162,10 +346,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ApplySavedWindowPlacement();
 
             Localizer.SetLanguage(_settings.Language);
-            SyncTargetsFromSettings();
+            SyncGroupsFromSettings();
             RefreshRunningTargets();
 
-            _globalHotkeyService.UpdateBindings(_settings.HideHotkey, _settings.ShowHotkey);
+            _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
             _globalHotkeyService.HotkeyTriggered += GlobalHotkeyService_OnHotkeyTriggered;
             _globalHotkeyService.Start();
 
@@ -229,6 +413,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _isClosing = true;
         _windowPickerService.Cancel();
         _windowPickerHighlightWindow.HideHighlight();
+        EndTargetTileDrag();
         _processWindowService.ShowHiddenTargets(bringToFront: false);
         _globalHotkeyService.Stop();
         SaveCurrentWindowPlacement();
@@ -243,6 +428,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _windowPickerService.HoverTargetChanged -= WindowPickerService_OnHoverTargetChanged;
         _windowPickerService.Dispose();
         _windowPickerHighlightWindow.Close();
+        _targetTileAutoScrollTimer.Stop();
+        _targetTileDragPreviewWindow?.Close();
+        _targetTileDragPreviewWindow = null;
         _globalHotkeyService.Dispose();
 
         if (_notifyIcon is not null)
@@ -256,7 +444,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _trayIcon = null;
     }
 
-    private void GlobalHotkeyService_OnHotkeyTriggered(object? sender, HotkeyAction action)
+    private void GlobalHotkeyService_OnHotkeyTriggered(object? sender, HotkeyTriggeredEventArgs e)
     {
         Dispatcher.Invoke(() =>
         {
@@ -265,24 +453,49 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            if (action == HotkeyAction.Toggle)
+            if (string.Equals(e.RouteId, AllTargetsRouteId, StringComparison.Ordinal))
             {
-                if (_processWindowService.HasHiddenWindows)
+                if (e.Action == HotkeyAction.Toggle)
                 {
-                    ShowTargets();
+                    if (_processWindowService.HasHiddenWindows)
+                    {
+                        ShowTargets();
+                    }
+                    else
+                    {
+                        HideTargets();
+                    }
                 }
-                else
+                else if (e.Action == HotkeyAction.Hide)
                 {
                     HideTargets();
                 }
+                else
+                {
+                    ShowTargets();
+                }
+
+                return;
             }
-            else if (action == HotkeyAction.Hide)
+
+            if (e.Action == HotkeyAction.Toggle)
             {
-                HideTargets();
+                if (_processWindowService.HasHiddenWindowsInGroup(e.RouteId))
+                {
+                    ShowTargets(e.RouteId);
+                }
+                else
+                {
+                    HideTargets(e.RouteId);
+                }
+            }
+            else if (e.Action == HotkeyAction.Hide)
+            {
+                HideTargets(e.RouteId);
             }
             else
             {
-                ShowTargets();
+                ShowTargets(e.RouteId);
             }
         });
     }
@@ -390,14 +603,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RemoveTargetButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not TargetAppConfig target)
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel target)
         {
             return;
         }
 
-        _selectedTargets.Remove(target);
+        var group = GetOwningGroup(target);
+        if (group is null)
+        {
+            return;
+        }
+
+        _processWindowService.ShowHiddenTargets([target.Config], group.Id, bringToFront: false);
+        group.Targets.Remove(target);
+        group.RefreshHotkeyText();
         PersistSettings();
         SetStatus(Localizer.Format("Main.StatusRemoved", target.ProcessName));
+    }
+
+    private TargetGroupViewModel? GetOwningGroup(TargetTileViewModel tile)
+    {
+        return _groupCards.FirstOrDefault(candidate => candidate.Targets.Contains(tile));
     }
 
     private void HideNowButton_OnClick(object sender, RoutedEventArgs e)
@@ -431,16 +657,37 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settings.Targets = dialog.UpdatedSettings.Targets
             .Select(static target => new TargetAppConfig
             {
+                Id = target.Id,
                 ProcessName = target.ProcessName,
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
                 MuteOnHide = target.MuteOnHide
             })
             .ToList();
+        _settings.Groups = dialog.UpdatedSettings.Groups
+            .Select(group => new TargetGroupConfig
+            {
+                Id = group.Id,
+                Name = group.Name,
+                HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
+                ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
+                IsCollapsed = group.IsCollapsed,
+                Targets = group.Targets
+                    .Select(static target => new TargetAppConfig
+                    {
+                        Id = target.Id,
+                        ProcessName = target.ProcessName,
+                        ProcessPath = target.ProcessPath,
+                        Enabled = target.Enabled,
+                        MuteOnHide = target.MuteOnHide
+                    })
+                    .ToList()
+            })
+            .ToList();
 
-        _globalHotkeyService.UpdateBindings(_settings.HideHotkey, _settings.ShowHotkey);
+        SyncGroupsFromSettings();
+        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
         Localizer.SetLanguage(_settings.Language);
-        SyncTargetsFromSettings();
         ApplyLocalization();
         PersistSettings();
         SetStatus(Localizer.T("Main.StatusSettingsApplied"));
@@ -507,47 +754,100 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HideTargets()
     {
-        if (_selectedTargets.Count == 0)
+        var targets = EnumerateAllTargetConfigs().ToList();
+        if (targets.Count == 0)
         {
             SetStatus(Localizer.T("Main.StatusNoTargets"));
             return;
         }
 
-        var hiddenCount = _processWindowService.HideTargets(_selectedTargets);
+        var hiddenCount = _processWindowService.HideTargets(targets);
         SetStatus(hiddenCount > 0
             ? Localizer.Format("Main.StatusHidden", hiddenCount)
             : Localizer.T("Main.StatusNoMatched"));
     }
 
-    private int ShowTargets()
+    private void HideTargets(string groupId)
     {
-        var restoredCount = _processWindowService.ShowHiddenTargets();
+        var group = _groupCards.FirstOrDefault(item => string.Equals(item.Id, groupId, StringComparison.Ordinal));
+        if (group is null)
+        {
+            return;
+        }
+
+        var targets = group.Targets.Select(static tile => tile.Config).ToList();
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        var hiddenCount = _processWindowService.HideTargets(targets, groupId);
+        SetStatus(hiddenCount > 0
+            ? Localizer.Format("Main.StatusHidden", hiddenCount)
+            : Localizer.T("Main.StatusNoMatched"));
+    }
+
+    private int ShowTargets(string? groupId = null)
+    {
+        var restoredCount = _processWindowService.ShowHiddenTargets(groupId);
         SetStatus(restoredCount > 0
             ? Localizer.Format("Main.StatusShown", restoredCount)
             : Localizer.T("Main.StatusNoHidden"));
         return restoredCount;
     }
 
-    private void SyncTargetsFromSettings()
+    private void SyncGroupsFromSettings()
     {
-        _selectedTargets.Clear();
-        foreach (var target in _settings.Targets)
+        _groupCards.Clear();
+        _visibleGroupCards.Clear();
+        _defaultGroupCard = null;
+
+        foreach (var group in _settings.Groups)
         {
-            _selectedTargets.Add(new TargetAppConfig
+            var viewModel = BuildGroupViewModel(group);
+            _groupCards.Add(viewModel);
+            if (viewModel.IsDefaultGroup)
             {
-                ProcessName = target.ProcessName,
-                ProcessPath = target.ProcessPath,
-                Enabled = target.Enabled,
-                MuteOnHide = target.MuteOnHide
-            });
+                _defaultGroupCard = viewModel;
+            }
+            else
+            {
+                _visibleGroupCards.Add(viewModel);
+            }
         }
+
+        FindOrCreateDefaultGroup();
+        RefreshGroupDisplayNames();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UngroupedTargets)));
     }
 
     private void PersistSettings()
     {
-        _settings.Targets = _selectedTargets
+        _settings.Groups = _groupCards
+            .Select(group => new TargetGroupConfig
+            {
+                Id = group.Id,
+                Name = group.Name,
+                HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
+                ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
+                IsCollapsed = group.IsCollapsed,
+                Targets = group.Targets
+                    .Select(static tile => new TargetAppConfig
+                    {
+                        Id = tile.Config.Id,
+                        ProcessName = tile.Config.ProcessName,
+                        ProcessPath = tile.Config.ProcessPath,
+                        Enabled = tile.Config.Enabled,
+                        MuteOnHide = tile.Config.MuteOnHide
+                    })
+                    .ToList()
+            })
+            .ToList();
+        _settings.Targets = _settings.Groups
+            .SelectMany(static group => group.Targets)
             .Select(static target => new TargetAppConfig
             {
+                Id = target.Id,
                 ProcessName = target.ProcessName,
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
@@ -632,7 +932,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void AddTarget(string processName, string? processPath)
     {
-        var alreadyExists = _selectedTargets.Any(target =>
+        var alreadyExists = EnumerateAllTargetConfigs().Any(target =>
             (!string.IsNullOrWhiteSpace(target.ProcessPath)
              && !string.IsNullOrWhiteSpace(processPath)
              && string.Equals(target.ProcessPath, processPath, StringComparison.OrdinalIgnoreCase))
@@ -644,16 +944,661 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        _selectedTargets.Add(new TargetAppConfig
-        {
-            ProcessName = processName,
-            ProcessPath = processPath,
-            Enabled = true,
-            MuteOnHide = false
-        });
+        var defaultGroup = FindOrCreateDefaultGroup();
+        defaultGroup.Targets.Add(new TargetTileViewModel(
+            new TargetAppConfig
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                ProcessName = processName,
+                ProcessPath = processPath,
+                Enabled = true,
+                MuteOnHide = false
+            },
+            _appIconService.GetIcon(processPath)));
+        defaultGroup.RefreshHotkeyText();
 
         PersistSettings();
         SetStatus(Localizer.Format("Main.StatusAdded", processName));
+    }
+
+    private IEnumerable<TargetAppConfig> EnumerateAllTargetConfigs()
+    {
+        return _groupCards.SelectMany(static group => group.Targets.Select(tile => tile.Config));
+    }
+
+    private IEnumerable<HotkeyRouteBinding> BuildHotkeyRoutes()
+    {
+        var bindings = _groupCards
+            .Select(group => new HotkeyRouteBinding(group.Id, group.HideHotkey, group.ShowHotkey))
+            .ToList();
+        bindings.Add(new HotkeyRouteBinding(AllTargetsRouteId, _settings.HideHotkey, _settings.ShowHotkey));
+        return bindings;
+    }
+
+    private TargetGroupViewModel BuildGroupViewModel(TargetGroupConfig group)
+    {
+        var tiles = group.Targets.Select(target => new TargetTileViewModel(
+            new TargetAppConfig
+            {
+                Id = target.Id,
+                ProcessName = target.ProcessName,
+                ProcessPath = target.ProcessPath,
+                Enabled = target.Enabled,
+                MuteOnHide = target.MuteOnHide
+            },
+            _appIconService.GetIcon(target.ProcessPath)));
+        return new TargetGroupViewModel(group, tiles);
+    }
+
+    private TargetGroupViewModel FindOrCreateDefaultGroup()
+    {
+        var defaultGroup = _defaultGroupCard ?? _groupCards.FirstOrDefault(group => group.IsDefaultGroup);
+        if (defaultGroup is not null)
+        {
+            _defaultGroupCard = defaultGroup;
+            return defaultGroup;
+        }
+
+        defaultGroup = new TargetGroupViewModel(new TargetGroupConfig
+        {
+            Id = TargetGroupConfig.DefaultGroupId,
+            Name = string.Empty
+        });
+        _groupCards.Insert(0, defaultGroup);
+        _defaultGroupCard = defaultGroup;
+        RefreshGroupDisplayNames();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UngroupedTargets)));
+        return defaultGroup;
+    }
+
+    private TargetGroupViewModel CreateNewGroup()
+    {
+        var group = new TargetGroupViewModel(new TargetGroupConfig
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Name = string.Empty
+        });
+        _groupCards.Add(group);
+        _visibleGroupCards.Add(group);
+        return group;
+    }
+
+    private void NewGroupButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var group = CreateNewGroup();
+        RefreshGroupDisplayNames();
+        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
+        PersistSettings();
+        SetStatus(Localizer.T("Main.StatusGroupCreated"));
+        BeginGroupRename(group);
+    }
+
+    private void ToggleGroupCollapseButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        ToggleGroupCollapse(group);
+    }
+
+    private void RenameGroupButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        BeginGroupRename(group);
+    }
+
+    private void GroupFolderBorder_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2
+            || sender is not FrameworkElement element
+            || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        ToggleGroupCollapse(group);
+        e.Handled = true;
+    }
+
+    private void GroupNameHost_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2
+            || sender is not FrameworkElement element
+            || element.DataContext is not TargetGroupViewModel group
+            || group.IsEditingName)
+        {
+            return;
+        }
+
+        BeginGroupRename(group);
+        e.Handled = true;
+    }
+
+    private void GroupNameTextBox_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        FocusGroupNameTextBox(sender);
+    }
+
+    private void GroupNameTextBox_OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true)
+        {
+            FocusGroupNameTextBox(sender);
+        }
+    }
+
+    private static void FocusGroupNameTextBox(object sender)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox)
+        {
+            return;
+        }
+
+        textBox.Dispatcher.BeginInvoke(() =>
+        {
+            textBox.Focus();
+            textBox.SelectAll();
+        });
+    }
+
+    private void GroupNameTextBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        CommitGroupRename(group);
+    }
+
+    private void GroupNameTextBox_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            CommitGroupRename(group);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            group.EditName = group.Name;
+            group.IsEditingName = false;
+            e.Handled = true;
+        }
+    }
+
+    private void DeleteGroupButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group || group.IsDefaultGroup)
+        {
+            return;
+        }
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            Localizer.Format("Main.GroupDeletePrompt", group.DisplayName),
+            Localizer.T("Main.GroupDeleteTitle"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var defaultGroup = FindOrCreateDefaultGroup();
+        _processWindowService.ShowHiddenTargets(group.Targets.Select(static tile => tile.Config), group.Id, bringToFront: false);
+        foreach (var tile in group.Targets.ToList())
+        {
+            group.Targets.Remove(tile);
+            defaultGroup.Targets.Add(tile);
+        }
+
+        _groupCards.Remove(group);
+        _visibleGroupCards.Remove(group);
+        defaultGroup.RefreshHotkeyText();
+        RefreshGroupDisplayNames();
+        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
+        PersistSettings();
+        SetStatus(Localizer.T("Main.StatusGroupDeleted"));
+    }
+
+    private void SetGroupHideHotkeyButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        var dialog = new HotkeyCaptureWindow(
+            Localizer.T("Main.GroupSetHideHotkey"),
+            Localizer.CurrentLanguage,
+            group.HideHotkey,
+            allowEmpty: true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        group.HideHotkey = dialog.CapturedBinding;
+        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
+        PersistSettings();
+    }
+
+    private void SetGroupShowHotkeyButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        {
+            return;
+        }
+
+        var dialog = new HotkeyCaptureWindow(
+            Localizer.T("Main.GroupSetShowHotkey"),
+            Localizer.CurrentLanguage,
+            group.ShowHotkey,
+            allowEmpty: true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        group.ShowHotkey = dialog.CapturedBinding;
+        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
+        PersistSettings();
+    }
+
+    private void TargetTile_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStartPoint = e.GetPosition(this);
+    }
+
+    private void TargetTile_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _dragStartPoint is null)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(this);
+        if (Math.Abs(position.X - _dragStartPoint.Value.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(position.Y - _dragStartPoint.Value.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        _dragStartPoint = null;
+        BeginTargetTileDrag(element, tile);
+    }
+
+    private void GroupDropTarget_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        UpdateTargetTileAutoScroll(e);
+
+        if (sender is not FrameworkElement element
+            || element.DataContext is not TargetGroupViewModel group
+            || !e.Data.GetDataPresent(TargetTileDragFormat))
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Data.GetData(TargetTileDragFormat) is not TargetTileViewModel tile
+            || _groupCards.FirstOrDefault(candidate => candidate.Targets.Contains(tile)) == group)
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        e.Effects = System.Windows.DragDropEffects.Move;
+        e.Handled = true;
+    }
+
+    private void GroupDropTarget_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (sender is not FrameworkElement element
+            || element.DataContext is not TargetGroupViewModel group
+            || e.Data.GetData(TargetTileDragFormat) is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        var sourceGroup = GetOwningGroup(tile);
+        if (sourceGroup is null || sourceGroup == group)
+        {
+            return;
+        }
+
+        _processWindowService.ShowHiddenTargets([tile.Config], sourceGroup.Id, bringToFront: false);
+        sourceGroup.Targets.Remove(tile);
+        group.Targets.Add(tile);
+        sourceGroup.RefreshHotkeyText();
+        group.RefreshHotkeyText();
+        PersistSettings();
+        SetStatus(Localizer.Format("Main.StatusMovedToGroup", tile.ProcessName, group.DisplayName));
+    }
+
+    private void UngroupedDropTarget_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        UpdateTargetTileAutoScroll(e);
+
+        if (!e.Data.GetDataPresent(TargetTileDragFormat))
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Data.GetData(TargetTileDragFormat) is not TargetTileViewModel tile
+            || GetOwningGroup(tile)?.IsDefaultGroup == true)
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        e.Effects = System.Windows.DragDropEffects.Move;
+        e.Handled = true;
+    }
+
+    private void UngroupedDropTarget_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (e.Data.GetData(TargetTileDragFormat) is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        var sourceGroup = GetOwningGroup(tile);
+        var defaultGroup = FindOrCreateDefaultGroup();
+        if (sourceGroup is null || sourceGroup == defaultGroup)
+        {
+            return;
+        }
+
+        _processWindowService.ShowHiddenTargets([tile.Config], sourceGroup.Id, bringToFront: false);
+        sourceGroup.Targets.Remove(tile);
+        defaultGroup.Targets.Add(tile);
+        sourceGroup.RefreshHotkeyText();
+        defaultGroup.RefreshHotkeyText();
+        PersistSettings();
+        SetStatus(Localizer.Format("Main.StatusMovedToGroup", tile.ProcessName, Localizer.T("Main.Ungrouped")));
+    }
+
+    private void TargetsScrollViewer_PreviewDragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        UpdateTargetTileAutoScroll(e);
+    }
+
+    private void TargetsScrollViewer_PreviewDragLeave(object sender, System.Windows.DragEventArgs e)
+    {
+        _dragScrollViewerPosition = null;
+    }
+
+    private void BeginTargetTileDrag(FrameworkElement sourceElement, TargetTileViewModel tile)
+    {
+        System.Windows.GiveFeedbackEventHandler feedbackHandler = TargetTileDragSource_GiveFeedback;
+        System.Windows.QueryContinueDragEventHandler queryContinueDragHandler = TargetTileDragSource_QueryContinueDrag;
+
+        sourceElement.GiveFeedback += feedbackHandler;
+        sourceElement.QueryContinueDrag += queryContinueDragHandler;
+        _dragScrollViewerPosition = null;
+        ShowTargetTileDragPreview(sourceElement);
+        _targetTileAutoScrollTimer.Start();
+
+        try
+        {
+            DragDrop.DoDragDrop(
+                sourceElement,
+                new System.Windows.DataObject(TargetTileDragFormat, tile),
+                System.Windows.DragDropEffects.Move);
+        }
+        finally
+        {
+            sourceElement.GiveFeedback -= feedbackHandler;
+            sourceElement.QueryContinueDrag -= queryContinueDragHandler;
+            EndTargetTileDrag();
+        }
+    }
+
+    private void TargetTileDragSource_GiveFeedback(object? sender, System.Windows.GiveFeedbackEventArgs e)
+    {
+        UpdateTargetTileDragPreviewPosition();
+        e.UseDefaultCursors = true;
+        e.Handled = true;
+    }
+
+    private void TargetTileDragSource_QueryContinueDrag(object? sender, System.Windows.QueryContinueDragEventArgs e)
+    {
+        UpdateTargetTileDragPreviewPosition();
+    }
+
+    private void ShowTargetTileDragPreview(FrameworkElement sourceElement)
+    {
+        var previewSource = CreateTargetTileDragPreview(sourceElement);
+        if (previewSource is null)
+        {
+            return;
+        }
+
+        _targetTileDragPreviewWindow?.Close();
+        _targetTileDragPreviewWindow = new TargetTileDragPreviewWindow(
+            previewSource,
+            sourceElement.ActualWidth,
+            sourceElement.ActualHeight);
+        _targetTileDragPreviewWindow.Show();
+        UpdateTargetTileDragPreviewPosition();
+    }
+
+    private void UpdateTargetTileDragPreviewPosition()
+    {
+        if (_targetTileDragPreviewWindow is null)
+        {
+            return;
+        }
+
+        var cursorPosition = Forms.Cursor.Position;
+        _targetTileDragPreviewWindow.UpdatePosition(cursorPosition.X, cursorPosition.Y);
+    }
+
+    private void EndTargetTileDrag()
+    {
+        _targetTileAutoScrollTimer.Stop();
+        _dragScrollViewerPosition = null;
+
+        if (_targetTileDragPreviewWindow is not null)
+        {
+            _targetTileDragPreviewWindow.Close();
+            _targetTileDragPreviewWindow = null;
+        }
+    }
+
+    private void TargetTileAutoScrollTimer_OnTick(object? sender, EventArgs e)
+    {
+        if (_dragScrollViewerPosition is not System.Windows.Point dragPosition || TargetsScrollViewer is null)
+        {
+            return;
+        }
+
+        AutoScrollTargetsScrollViewer(TargetsScrollViewer, dragPosition);
+        UpdateTargetTileDragPreviewPosition();
+    }
+
+    private void UpdateTargetTileAutoScroll(System.Windows.DragEventArgs e)
+    {
+        if (TargetsScrollViewer is null || !e.Data.GetDataPresent(TargetTileDragFormat))
+        {
+            _dragScrollViewerPosition = null;
+            return;
+        }
+
+        _dragScrollViewerPosition = e.GetPosition(TargetsScrollViewer);
+        AutoScrollTargetsScrollViewer(TargetsScrollViewer, _dragScrollViewerPosition.Value);
+        UpdateTargetTileDragPreviewPosition();
+    }
+
+    private static void AutoScrollTargetsScrollViewer(ScrollViewer scrollViewer, System.Windows.Point cursorPosition)
+    {
+        if (scrollViewer.ScrollableHeight <= 0 || scrollViewer.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        double delta = 0d;
+        if (cursorPosition.Y < TargetTileAutoScrollEdgeThreshold)
+        {
+            var intensity = (TargetTileAutoScrollEdgeThreshold - Math.Max(0d, cursorPosition.Y)) / TargetTileAutoScrollEdgeThreshold;
+            delta = -Math.Max(2d, intensity * TargetTileAutoScrollMaxSpeed);
+        }
+        else if (cursorPosition.Y > scrollViewer.ActualHeight - TargetTileAutoScrollEdgeThreshold)
+        {
+            var distanceToBottom = Math.Max(0d, scrollViewer.ActualHeight - cursorPosition.Y);
+            var intensity = (TargetTileAutoScrollEdgeThreshold - distanceToBottom) / TargetTileAutoScrollEdgeThreshold;
+            delta = Math.Max(2d, intensity * TargetTileAutoScrollMaxSpeed);
+        }
+
+        if (Math.Abs(delta) < double.Epsilon)
+        {
+            return;
+        }
+
+        var nextOffset = Math.Clamp(scrollViewer.VerticalOffset + delta, 0d, scrollViewer.ScrollableHeight);
+        scrollViewer.ScrollToVerticalOffset(nextOffset);
+    }
+
+    private static ImageSource? CreateTargetTileDragPreview(FrameworkElement sourceElement)
+    {
+        if (sourceElement.ActualWidth <= 0 || sourceElement.ActualHeight <= 0)
+        {
+            return null;
+        }
+
+        var size = new System.Windows.Size(sourceElement.ActualWidth, sourceElement.ActualHeight);
+        var dpi = VisualTreeHelper.GetDpi(sourceElement);
+        var renderTarget = new RenderTargetBitmap(
+            Math.Max(1, (int)Math.Ceiling(size.Width * dpi.DpiScaleX)),
+            Math.Max(1, (int)Math.Ceiling(size.Height * dpi.DpiScaleY)),
+            96d * dpi.DpiScaleX,
+            96d * dpi.DpiScaleY,
+            PixelFormats.Pbgra32);
+
+        var drawingVisual = new DrawingVisual();
+        using (var drawingContext = drawingVisual.RenderOpen())
+        {
+            drawingContext.DrawRectangle(new VisualBrush(sourceElement), null, new Rect(new System.Windows.Point(0, 0), size));
+        }
+
+        renderTarget.Render(drawingVisual);
+        renderTarget.Freeze();
+        return renderTarget;
+    }
+
+    private void ToggleTargetEnabledMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        if (element is System.Windows.Controls.MenuItem menuItem)
+        {
+            tile.Enabled = menuItem.IsChecked;
+        }
+
+        PersistSettings();
+    }
+
+    private void ToggleTargetMuteMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        if (element is System.Windows.Controls.MenuItem menuItem)
+        {
+            tile.MuteOnHide = menuItem.IsChecked;
+        }
+
+        PersistSettings();
+    }
+
+    private void RemoveTargetMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        var sourceGroup = GetOwningGroup(tile);
+        if (sourceGroup is null)
+        {
+            return;
+        }
+
+        _processWindowService.ShowHiddenTargets([tile.Config], sourceGroup.Id, bringToFront: false);
+        sourceGroup.Targets.Remove(tile);
+        sourceGroup.RefreshHotkeyText();
+        PersistSettings();
+        SetStatus(Localizer.Format("Main.StatusRemoved", tile.ProcessName));
+    }
+
+    private void BeginGroupRename(TargetGroupViewModel group)
+    {
+        group.EditName = !string.IsNullOrWhiteSpace(group.Name)
+            ? group.Name
+            : group.DisplayName;
+        group.IsEditingName = true;
+    }
+
+    private void ToggleGroupCollapse(TargetGroupViewModel group)
+    {
+        group.IsCollapsed = !group.IsCollapsed;
+        PersistSettings();
+    }
+
+    private void CommitGroupRename(TargetGroupViewModel group)
+    {
+        var newName = group.EditName.Trim();
+        group.Name = newName;
+        group.IsEditingName = false;
+        RefreshGroupDisplayNames();
+        PersistSettings();
+        SetStatus(Localizer.T("Main.StatusGroupRenamed"));
+    }
+
+    private void RefreshGroupDisplayNames()
+    {
+        foreach (var group in _groupCards)
+        {
+            group.DisplayName = !string.IsNullOrWhiteSpace(group.Name)
+                ? group.Name
+                : group.IsDefaultGroup
+                    ? Localizer.T("Main.Ungrouped")
+                    : Localizer.T("Main.NewGroup");
+        }
     }
 
     private static Drawing.Icon LoadTrayIcon()
@@ -691,14 +1636,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OpenSettingsButtonTextBlock.Text = Localizer.T("Main.OpenSettings");
         LogTitleTextBlock.Text = Localizer.T("Main.LogTitle");
         ClearLogsButtonTextBlock.Text = Localizer.T("Main.ClearLogs");
-        EnabledColumn.Header = Localizer.T("Main.EnabledColumn");
-        ProcessColumn.Header = Localizer.T("Main.ProcessColumn");
-        PathColumn.Header = Localizer.T("Main.PathColumn");
-        MuteOnHideColumn.Header = string.Equals(Localizer.CurrentLanguage, "en-US", StringComparison.OrdinalIgnoreCase)
-            ? "Mute"
-            : "静音";
-        ActionColumn.Header = Localizer.T("Main.ActionColumn");
         RemoveButtonText = Localizer.T("Main.Remove");
+        NewGroupButtonText = Localizer.T("Main.NewGroup");
+        TargetEnabledText = Localizer.T("Main.TargetEnabled");
+        TargetMuteOnHideText = Localizer.T("Main.TargetMuteOnHide");
+        RenameGroupText = Localizer.T("Main.GroupRename");
+        DeleteGroupText = Localizer.T("Main.GroupDelete");
+        ToggleGroupText = Localizer.T("Main.GroupToggle");
+        SetGroupHideHotkeyText = Localizer.T("Main.GroupSetHideHotkey");
+        SetGroupShowHotkeyText = Localizer.T("Main.GroupSetShowHotkey");
+        EmptyGroupHintText = Localizer.T("Main.EmptyGroupHint");
+        UngroupedDropHintText = Localizer.T("Main.UngroupedDropHint");
         UpdateDownloadTitleText = Localizer.T("Update.ProgressTitle");
 
         var hideKeys = _settings.HideHotkey.GetNormalizedKeys();
@@ -709,6 +1657,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ? Localizer.Format("Main.ToggleHint", hideText)
             : Localizer.Format("Main.HotkeyHint", hideText, showText);
 
+        RefreshGroupDisplayNames();
         UpdateLogPanelState();
         BuildTrayMenu();
     }
@@ -1213,3 +2162,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 }
+
+
+

@@ -18,7 +18,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\HideProcess.ico</ApplicationIcon>
-    <AppVersion Condition="'$(AppVersion)' == ''">1.1.0</AppVersion>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.2.0</AppVersion>
     <Version Condition="'$(Version)' == ''">$(AppVersion)</Version>
     <FileVersion Condition="'$(FileVersion)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(AppVersion)', '^\d+\.\d+\.\d+$'))">$(AppVersion).0</FileVersion>
     <FileVersion Condition="'$(FileVersion)' == ''">$(AppVersion)</FileVersion>

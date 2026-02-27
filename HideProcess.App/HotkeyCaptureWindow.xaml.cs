@@ -11,15 +11,17 @@ public partial class HotkeyCaptureWindow : Window
 {
     private readonly HashSet<int> _pressedKeys = [];
     private readonly string _languageCode;
+    private readonly bool _allowEmpty;
     private HashSet<int> _capturedKeys = [];
 
     public HotkeyBinding CapturedBinding { get; private set; } = new();
 
-    public HotkeyCaptureWindow(string title, string languageCode, HotkeyBinding initialBinding)
+    public HotkeyCaptureWindow(string title, string languageCode, HotkeyBinding initialBinding, bool allowEmpty = false)
     {
         InitializeComponent();
         Title = title;
         _languageCode = Localizer.NormalizeLanguage(languageCode);
+        _allowEmpty = allowEmpty;
         _capturedKeys = initialBinding.GetNormalizedKeys();
         ApplyLocalization();
         UpdatePreview();
@@ -63,6 +65,14 @@ public partial class HotkeyCaptureWindow : Window
     {
         if (_capturedKeys.Count == 0)
         {
+            if (_allowEmpty)
+            {
+                CapturedBinding = new HotkeyBinding();
+                DialogResult = true;
+                Close();
+                return;
+            }
+
             System.Windows.MessageBox.Show(
                 this,
                 Localizer.T("Hotkey.Empty", _languageCode),

@@ -3,7 +3,7 @@
 #define MyAppExeName "HideProcess.App.exe"
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.1.0"
+  #define MyAppVersion "1.2.0"
 #endif
 
 #ifndef OutputBaseName

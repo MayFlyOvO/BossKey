@@ -80,9 +80,85 @@ public sealed class JsonSettingsStore
     private static AppSettings Normalize(AppSettings settings, AppSettings defaults)
     {
         settings.Targets ??= [];
-        settings.HideHotkey = settings.HideHotkey?.IsValid == true ? settings.HideHotkey : defaults.HideHotkey;
-        settings.ShowHotkey = settings.ShowHotkey?.IsValid == true ? settings.ShowHotkey : defaults.ShowHotkey;
+        settings.Groups ??= [];
+        settings.HideHotkey = NormalizeHotkeyBinding(settings.HideHotkey, defaults.HideHotkey);
+        settings.ShowHotkey = NormalizeHotkeyBinding(settings.ShowHotkey, defaults.ShowHotkey);
         settings.Language = string.IsNullOrWhiteSpace(settings.Language) ? defaults.Language : settings.Language;
+        foreach (var target in settings.Targets)
+        {
+            EnsureTargetDefaults(target);
+        }
+
+        foreach (var group in settings.Groups)
+        {
+            group.Id = string.IsNullOrWhiteSpace(group.Id) ? Guid.NewGuid().ToString("N") : group.Id;
+            group.Targets ??= [];
+            group.HideHotkey = NormalizeHotkeyBinding(group.HideHotkey, new HotkeyBinding());
+            group.ShowHotkey = NormalizeHotkeyBinding(group.ShowHotkey, new HotkeyBinding());
+            foreach (var target in group.Targets)
+            {
+                EnsureTargetDefaults(target);
+            }
+        }
+
+        if (settings.Groups.Count == 0)
+        {
+            settings.Groups.Add(new TargetGroupConfig
+            {
+                Id = TargetGroupConfig.DefaultGroupId,
+                Name = string.Empty,
+                Targets = settings.Targets
+                    .Select(static target => new TargetAppConfig
+                    {
+                        Id = target.Id,
+                        ProcessName = target.ProcessName,
+                        ProcessPath = target.ProcessPath,
+                        Enabled = target.Enabled,
+                        MuteOnHide = target.MuteOnHide
+                    })
+                    .ToList()
+            });
+        }
+
+        var defaultGroup = settings.Groups.FirstOrDefault(group =>
+            string.Equals(group.Id, TargetGroupConfig.DefaultGroupId, StringComparison.OrdinalIgnoreCase));
+        if (defaultGroup is null)
+        {
+            settings.Groups.Insert(0, new TargetGroupConfig
+            {
+                Id = TargetGroupConfig.DefaultGroupId,
+                Name = string.Empty
+            });
+        }
+
+        settings.Targets = settings.Groups
+            .SelectMany(static group => group.Targets)
+            .Select(static target => new TargetAppConfig
+            {
+                Id = target.Id,
+                ProcessName = target.ProcessName,
+                ProcessPath = target.ProcessPath,
+                Enabled = target.Enabled,
+                MuteOnHide = target.MuteOnHide
+            })
+            .ToList();
+
         return settings;
+    }
+
+    private static void EnsureTargetDefaults(TargetAppConfig target)
+    {
+        target.Id = string.IsNullOrWhiteSpace(target.Id) ? Guid.NewGuid().ToString("N") : target.Id;
+    }
+
+    private static HotkeyBinding NormalizeHotkeyBinding(HotkeyBinding? binding, HotkeyBinding fallback)
+    {
+        if (binding is null)
+        {
+            return HotkeyBinding.FromKeys(fallback.Keys);
+        }
+
+        binding.Keys ??= [];
+        return binding;
     }
 }

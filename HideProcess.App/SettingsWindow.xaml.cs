@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 using HideProcess.App.Localization;
@@ -21,8 +22,10 @@ public partial class SettingsWindow : Window
     };
 
     private readonly JsonSettingsStore _settingsStore = new();
+    private readonly ObservableCollection<GroupHotkeyOption> _groupHotkeyOptions = [];
     private AppSettings _workingCopy;
     private string _previewLanguage;
+    private string? _selectedGroupHotkeyId;
 
     public AppSettings UpdatedSettings { get; }
 
@@ -34,6 +37,7 @@ public partial class SettingsWindow : Window
         _previewLanguage = Localizer.NormalizeLanguage(settings.Language);
 
         LanguageComboBox.ItemsSource = Localizer.SupportedLanguages;
+        GroupHotkeyComboBox.ItemsSource = _groupHotkeyOptions;
         SyncControlsFromWorkingCopy();
         ApplyLocalization();
         UpdateHotkeyPreview();
@@ -45,7 +49,8 @@ public partial class SettingsWindow : Window
         var dialog = new HotkeyCaptureWindow(
             Localizer.T("Hotkey.TitleHide", _previewLanguage),
             _previewLanguage,
-            _workingCopy.HideHotkey)
+            _workingCopy.HideHotkey,
+            allowEmpty: true)
         {
             Owner = this
         };
@@ -65,7 +70,8 @@ public partial class SettingsWindow : Window
         var dialog = new HotkeyCaptureWindow(
             Localizer.T("Hotkey.TitleShow", _previewLanguage),
             _previewLanguage,
-            _workingCopy.ShowHotkey)
+            _workingCopy.ShowHotkey,
+            allowEmpty: true)
         {
             Owner = this
         };
@@ -77,6 +83,60 @@ public partial class SettingsWindow : Window
 
         _workingCopy.ShowHotkey = dialog.CapturedBinding;
         UpdateHotkeyPreview();
+        UpdateHotkeyConflictWarning();
+    }
+
+    private void SetGroupHideHotkeyButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var group = GetSelectedGroupHotkeyTarget();
+        if (group is null)
+        {
+            return;
+        }
+
+        var dialog = new HotkeyCaptureWindow(
+            Localizer.T("Main.GroupSetHideHotkey", _previewLanguage),
+            _previewLanguage,
+            group.HideHotkey,
+            allowEmpty: true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        group.HideHotkey = dialog.CapturedBinding;
+        UpdateGroupHotkeyPreview();
+        UpdateHotkeyConflictWarning();
+    }
+
+    private void SetGroupShowHotkeyButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var group = GetSelectedGroupHotkeyTarget();
+        if (group is null)
+        {
+            return;
+        }
+
+        var dialog = new HotkeyCaptureWindow(
+            Localizer.T("Main.GroupSetShowHotkey", _previewLanguage),
+            _previewLanguage,
+            group.ShowHotkey,
+            allowEmpty: true)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        group.ShowHotkey = dialog.CapturedBinding;
+        UpdateGroupHotkeyPreview();
         UpdateHotkeyConflictWarning();
     }
 
@@ -190,7 +250,19 @@ public partial class SettingsWindow : Window
         }
 
         _previewLanguage = option.Code;
+        RefreshGroupHotkeyOptions();
         ApplyLocalization();
+        UpdateHotkeyConflictWarning();
+    }
+
+    private void GroupHotkeyComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (GroupHotkeyComboBox.SelectedItem is GroupHotkeyOption option)
+        {
+            _selectedGroupHotkeyId = option.GroupId;
+        }
+
+        UpdateGroupHotkeyPreview();
         UpdateHotkeyConflictWarning();
     }
 
@@ -231,6 +303,12 @@ public partial class SettingsWindow : Window
         ShowHotkeyLabel.Text = Localizer.T("Settings.ShowHotkey", _previewLanguage);
         SetHideHotkeyButtonTextBlock.Text = Localizer.T("Settings.SetHotkey", _previewLanguage);
         SetShowHotkeyButtonTextBlock.Text = Localizer.T("Settings.SetHotkey", _previewLanguage);
+        GroupHotkeysSectionTextBlock.Text = Localizer.T("Settings.GroupHotkeys", _previewLanguage);
+        GroupHotkeyTargetLabel.Text = Localizer.T("Settings.GroupTarget", _previewLanguage);
+        GroupHideHotkeyLabel.Text = Localizer.T("Settings.GroupHideHotkey", _previewLanguage);
+        GroupShowHotkeyLabel.Text = Localizer.T("Settings.GroupShowHotkey", _previewLanguage);
+        SetGroupHideHotkeyButtonTextBlock.Text = Localizer.T("Settings.SetHotkey", _previewLanguage);
+        SetGroupShowHotkeyButtonTextBlock.Text = Localizer.T("Settings.SetHotkey", _previewLanguage);
         GeneralSectionTextBlock.Text = Localizer.T("Settings.General", _previewLanguage);
         StartWithWindowsCheckBox.Content = Localizer.T("Settings.StartWithWindows", _previewLanguage);
         MinimizeToTrayCheckBox.Content = Localizer.T("Settings.MinimizeToTray", _previewLanguage);
@@ -249,6 +327,7 @@ public partial class SettingsWindow : Window
     {
         HideHotkeyValueTextBlock.Text = HotkeyFormatter.Format(_workingCopy.HideHotkey);
         ShowHotkeyValueTextBlock.Text = HotkeyFormatter.Format(_workingCopy.ShowHotkey);
+        UpdateGroupHotkeyPreview();
     }
 
     private void UpdateHotkeyConflictWarning()
@@ -264,6 +343,20 @@ public partial class SettingsWindow : Window
 
         AppendBindingWarnings(_workingCopy.HideHotkey, Localizer.T("Settings.HideHotkey", _previewLanguage), warnings);
         AppendBindingWarnings(_workingCopy.ShowHotkey, Localizer.T("Settings.ShowHotkey", _previewLanguage), warnings);
+
+        var selectedGroup = GetSelectedGroupHotkeyTarget();
+        if (selectedGroup is not null)
+        {
+            var groupHideKeys = selectedGroup.HideHotkey.GetNormalizedKeys();
+            var groupShowKeys = selectedGroup.ShowHotkey.GetNormalizedKeys();
+            if (groupHideKeys.Count > 0 && groupShowKeys.Count > 0 && groupHideKeys.SetEquals(groupShowKeys))
+            {
+                warnings.Add(Localizer.T("Settings.GroupHotkeyWarningToggle", _previewLanguage));
+            }
+
+            AppendBindingWarnings(selectedGroup.HideHotkey, Localizer.T("Settings.GroupHideHotkey", _previewLanguage), warnings);
+            AppendBindingWarnings(selectedGroup.ShowHotkey, Localizer.T("Settings.GroupShowHotkey", _previewLanguage), warnings);
+        }
 
         if (warnings.Count == 0)
         {
@@ -304,6 +397,7 @@ public partial class SettingsWindow : Window
         LanguageComboBox.SelectedItem = Localizer.SupportedLanguages.FirstOrDefault(
             option => string.Equals(option.Code, _previewLanguage, StringComparison.OrdinalIgnoreCase))
             ?? Localizer.SupportedLanguages[0];
+        RefreshGroupHotkeyOptions();
     }
 
     private void SyncControlsToWorkingCopy()
@@ -312,6 +406,57 @@ public partial class SettingsWindow : Window
         _workingCopy.MinimizeToTray = MinimizeToTrayCheckBox.IsChecked == true;
         _workingCopy.AutoCheckForUpdates = AutoCheckUpdatesCheckBox.IsChecked != false;
         _workingCopy.Language = _previewLanguage;
+    }
+
+    private void RefreshGroupHotkeyOptions()
+    {
+        var previousSelection = _selectedGroupHotkeyId;
+        _groupHotkeyOptions.Clear();
+
+        foreach (var group in _workingCopy.Groups)
+        {
+            _groupHotkeyOptions.Add(new GroupHotkeyOption(group.Id, GetGroupDisplayName(group)));
+        }
+
+        var targetSelection = _groupHotkeyOptions.FirstOrDefault(option =>
+                                  string.Equals(option.GroupId, previousSelection, StringComparison.Ordinal))
+                              ?? _groupHotkeyOptions.FirstOrDefault();
+        GroupHotkeyComboBox.SelectedItem = targetSelection;
+        _selectedGroupHotkeyId = targetSelection?.GroupId;
+        UpdateGroupHotkeyPreview();
+    }
+
+    private void UpdateGroupHotkeyPreview()
+    {
+        var group = GetSelectedGroupHotkeyTarget();
+        var hasSelection = group is not null;
+
+        GroupHideHotkeyValueTextBlock.Text = hasSelection ? HotkeyFormatter.Format(group!.HideHotkey) : "-";
+        GroupShowHotkeyValueTextBlock.Text = hasSelection ? HotkeyFormatter.Format(group!.ShowHotkey) : "-";
+        SetGroupHideHotkeyButton.IsEnabled = hasSelection;
+        SetGroupShowHotkeyButton.IsEnabled = hasSelection;
+    }
+
+    private TargetGroupConfig? GetSelectedGroupHotkeyTarget()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedGroupHotkeyId))
+        {
+            return null;
+        }
+
+        return _workingCopy.Groups.FirstOrDefault(group => string.Equals(group.Id, _selectedGroupHotkeyId, StringComparison.Ordinal));
+    }
+
+    private string GetGroupDisplayName(TargetGroupConfig group)
+    {
+        if (!string.IsNullOrWhiteSpace(group.Name))
+        {
+            return group.Name;
+        }
+
+        return string.Equals(group.Id, TargetGroupConfig.DefaultGroupId, StringComparison.OrdinalIgnoreCase)
+            ? Localizer.T("Main.Ungrouped", _previewLanguage)
+            : Localizer.T("Main.NewGroup", _previewLanguage);
     }
 
     private static bool ContainsModifier(HashSet<int> keys)
@@ -349,10 +494,31 @@ public partial class SettingsWindow : Window
             Targets = source.Targets
                 .Select(static target => new TargetAppConfig
                 {
+                    Id = target.Id,
                     ProcessName = target.ProcessName,
                     ProcessPath = target.ProcessPath,
                     Enabled = target.Enabled,
                     MuteOnHide = target.MuteOnHide
+                })
+                .ToList(),
+            Groups = source.Groups
+                .Select(static group => new TargetGroupConfig
+                {
+                    Id = group.Id,
+                    Name = group.Name,
+                    HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
+                    ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
+                    IsCollapsed = group.IsCollapsed,
+                    Targets = group.Targets
+                        .Select(static target => new TargetAppConfig
+                        {
+                            Id = target.Id,
+                            ProcessName = target.ProcessName,
+                            ProcessPath = target.ProcessPath,
+                            Enabled = target.Enabled,
+                            MuteOnHide = target.MuteOnHide
+                        })
+                        .ToList()
                 })
                 .ToList()
         };
@@ -381,11 +547,40 @@ public partial class SettingsWindow : Window
         destination.Targets = source.Targets
             .Select(static target => new TargetAppConfig
             {
+                Id = target.Id,
                 ProcessName = target.ProcessName,
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
                 MuteOnHide = target.MuteOnHide
             })
             .ToList();
+        destination.Groups = source.Groups
+            .Select(static group => new TargetGroupConfig
+            {
+                Id = group.Id,
+                Name = group.Name,
+                HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
+                ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
+                IsCollapsed = group.IsCollapsed,
+                Targets = group.Targets
+                    .Select(static target => new TargetAppConfig
+                    {
+                        Id = target.Id,
+                        ProcessName = target.ProcessName,
+                        ProcessPath = target.ProcessPath,
+                        Enabled = target.Enabled,
+                        MuteOnHide = target.MuteOnHide
+                    })
+                    .ToList()
+            })
+            .ToList();
+    }
+
+    private sealed record GroupHotkeyOption(string GroupId, string DisplayName)
+    {
+        public override string ToString()
+        {
+            return DisplayName;
+        }
     }
 }
