@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Width="720"
-        Height="760"
+        Height="810"
         MinWidth="680"
-        MinHeight="720"
+        MinHeight="770"
         WindowStyle="None"
         Icon="pack://application:,,,/Assets/BossKey.ico"
         ResizeMode="NoResize"
@@ -106,17 +106,18 @@
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
                         <Grid SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <Border x:Name="SwitchTrack"
-                                    Grid.Column="0"
+                                    Grid.Column="1"
                                     Width="42"
                                     Height="24"
                                     CornerRadius="12"
@@ -133,7 +134,7 @@
                             </Border>
 
                             <Border x:Name="SwitchThumb"
-                                    Grid.Column="0"
+                                    Grid.Column="1"
                                     Width="20"
                                     Height="20"
                                     CornerRadius="10"
@@ -149,9 +150,10 @@
                                 </Border.Effect>
                             </Border>
 
-                            <ContentPresenter Grid.Column="1"
-                                              Margin="10,0,0,0"
+                            <ContentPresenter Grid.Column="0"
+                                              Margin="0,0,10,0"
                                               VerticalAlignment="Center"
+                                              HorizontalAlignment="Stretch"
                                               RecognizesAccessKey="True" />
                         </Grid>
 
@@ -619,43 +621,54 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="170" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="130" />
                             </Grid.ColumnDefinitions>
 
                             <TextBlock x:Name="GeneralSectionTextBlock"
-                                       Grid.ColumnSpan="2"
+                                       Grid.ColumnSpan="3"
                                        FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="#334155" />
                             <CheckBox x:Name="StartWithWindowsCheckBox"
                                       Grid.Row="1"
-                                      Grid.ColumnSpan="2"
+                                      Grid.ColumnSpan="3"
                                       Margin="0,14,0,0"
                                       Style="{StaticResource FlatLabeledCheckBoxStyle}" />
 
                             <CheckBox x:Name="MinimizeToTrayCheckBox"
                                       Grid.Row="2"
-                                      Grid.ColumnSpan="2"
+                                      Grid.ColumnSpan="3"
                                       Margin="0,10,0,0"
                                       Style="{StaticResource FlatLabeledCheckBoxStyle}" />
 
                             <CheckBox x:Name="RunAsAdministratorCheckBox"
                                       Grid.Row="3"
-                                      Grid.ColumnSpan="2"
+                                      Grid.ColumnSpan="3"
                                       Margin="0,10,0,0"
                                       Style="{StaticResource FlatLabeledCheckBoxStyle}" />
 
-                            <StackPanel Grid.Row="4"
-                                        Grid.ColumnSpan="2"
-                                        Orientation="Horizontal"
-                                        Margin="0,10,0,0">
-                                <CheckBox x:Name="AutoCheckUpdatesCheckBox"
-                                          Style="{StaticResource FlatLabeledCheckBoxStyle}" />
+                            <Grid Grid.Row="4"
+                                  Grid.ColumnSpan="3"
+                                  Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="AutoCheckUpdatesLabelTextBlock"
+                                           Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           Foreground="#25313D"
+                                           TextTrimming="CharacterEllipsis" />
                                 <Button x:Name="CheckUpdatesButton"
+                                        Grid.Column="1"
                                         Width="92"
                                         Height="30"
-                                        Margin="10,0,0,0"
+                                        Margin="12,0,12,0"
                                         Padding="10,6"
                                         VerticalAlignment="Center"
                                         Style="{StaticResource NeutralButtonStyle}"
@@ -665,7 +678,11 @@
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center" />
                                 </Button>
-                            </StackPanel>
+                                <CheckBox x:Name="AutoCheckUpdatesCheckBox"
+                                          Grid.Column="2"
+                                          HorizontalAlignment="Right"
+                                          Style="{StaticResource FlatLabeledCheckBoxStyle}" />
+                            </Grid>
 
                             <TextBlock x:Name="LanguageLabel"
                                        Grid.Row="5"
@@ -676,13 +693,32 @@
                             <ComboBox x:Name="LanguageComboBox"
                                       Grid.Row="5"
                                       Grid.Column="1"
-                                      Margin="0,16,0,0"
+                                      Margin="0,16,12,0"
                                       Height="40"
                                       Style="{StaticResource RoundedComboBoxStyle}"
                                       ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
                                       VerticalContentAlignment="Center"
                                       DisplayMemberPath="DisplayName"
                                       SelectionChanged="LanguageComboBox_OnSelectionChanged" />
+                            <Button x:Name="SyncLanguagesButton"
+                                    Grid.Row="5"
+                                    Grid.Column="2"
+                                    Height="40"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource NeutralButtonStyle}"
+                                    Click="SyncLanguagesButton_OnClick">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE72C;"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="SyncLanguagesButtonTextBlock"
+                                               Margin="6,0,0,0"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </Grid>
                     </Border>
                     </StackPanel>

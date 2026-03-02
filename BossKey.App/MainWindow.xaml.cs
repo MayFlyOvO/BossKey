@@ -357,7 +357,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             _settings = _settingsStore.Load();
-            _settings.Language = Localizer.NormalizeLanguage(_settings.Language);
+            _settings.Language = Localizer.NormalizeStoredLanguage(_settings.Language);
             _isLogCollapsed = _settings.IsLogPanelCollapsed;
             ApplySavedWindowPlacement();
 
@@ -388,6 +388,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     MessageBoxImage.Warning);
             }
 
+            _ = RefreshLanguageCatalogInBackgroundAsync();
             _ = CheckForUpdatesAsync(manualCheck: false);
         }
         catch (Exception ex)
@@ -671,7 +672,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _settings.MinimizeToTray = dialog.UpdatedSettings.MinimizeToTray;
             _settings.AutoCheckForUpdates = dialog.UpdatedSettings.AutoCheckForUpdates;
             _settings.LastUpdateCheckUtc = dialog.UpdatedSettings.LastUpdateCheckUtc;
-            _settings.Language = Localizer.NormalizeLanguage(dialog.UpdatedSettings.Language);
+            _settings.Language = Localizer.NormalizeStoredLanguage(dialog.UpdatedSettings.Language);
             _settings.IsLogPanelCollapsed = dialog.UpdatedSettings.IsLogPanelCollapsed;
             _isLogCollapsed = _settings.IsLogPanelCollapsed;
             _settings.Targets = dialog.UpdatedSettings.Targets
@@ -1742,6 +1743,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         StatusTextBlock.Text = $"{DateTime.Now:HH:mm:ss}  {message}";
         AppendLog(message);
+    }
+
+    private async Task RefreshLanguageCatalogInBackgroundAsync()
+    {
+        await Localizer.RefreshRemoteCatalogAsync();
     }
 
     private void UpdateLogPanelState()

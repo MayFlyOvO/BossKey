@@ -1,0 +1,17 @@
+{
+    "schemaVersion": 1,
+    "languages": [
+        {
+            "code": "zh-CN",
+            "displayName": "简体中文",
+            "version": "1.0.0",
+            "file": "zh-CN.json"
+        },
+        {
+            "code": "ja-JP",
+            "displayName": "日本語",
+            "version": "1.0.0",
+            "file": "ja-JP.json"
+        }
+    ]
+}
