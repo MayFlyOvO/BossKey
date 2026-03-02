@@ -1149,6 +1149,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        if (!textBox.IsVisible
+            || textBox.DataContext is not TargetGroupViewModel { IsEditingName: true })
+        {
+            return;
+        }
+
         textBox.Dispatcher.BeginInvoke(() =>
         {
             textBox.Focus();
@@ -1158,7 +1164,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void GroupNameTextBox_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not TargetGroupViewModel group)
+        if (sender is not FrameworkElement element
+            || element.DataContext is not TargetGroupViewModel group
+            || !group.IsEditingName)
         {
             return;
         }
@@ -1645,10 +1653,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void CommitGroupRename(TargetGroupViewModel group)
     {
+        if (!group.IsEditingName)
+        {
+            return;
+        }
+
+        var previousName = group.Name;
         var newName = group.EditName.Trim();
         group.Name = newName;
         group.IsEditingName = false;
         RefreshGroupDisplayNames();
+        if (string.Equals(previousName, newName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         PersistSettings();
         SetStatus(Localizer.T("Main.StatusGroupRenamed"));
     }
