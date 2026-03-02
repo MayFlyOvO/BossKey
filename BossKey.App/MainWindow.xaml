@@ -340,6 +340,20 @@
             </Setter>
         </Style>
 
+        <Style x:Key="TargetContextMenuSeparatorStyle" TargetType="Separator">
+            <Setter Property="Margin" Value="12,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1"
+                                HorizontalAlignment="Stretch"
+                                Background="#FFE4E7EB"
+                                SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="SwitchMenuItemStyle" TargetType="MenuItem">
             <Setter Property="StaysOpenOnClick" Value="True" />
             <Setter Property="Foreground" Value="#25313D" />
@@ -773,7 +787,7 @@
                                                                               IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                               Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="ToggleTargetFreezeMenuItem_OnClick" />
-                                                                    <Separator />
+                                                                    <Separator Style="{StaticResource TargetContextMenuSeparatorStyle}" />
                                                                     <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="RemoveTargetMenuItem_OnClick" />
                                                                 </ContextMenu>
@@ -1070,7 +1084,7 @@
                                                                                                   IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                                                   Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="ToggleTargetFreezeMenuItem_OnClick" />
-                                                                                        <Separator />
+                                                                                        <Separator Style="{StaticResource TargetContextMenuSeparatorStyle}" />
                                                                                         <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="RemoveTargetMenuItem_OnClick" />
                                                                                     </ContextMenu>
