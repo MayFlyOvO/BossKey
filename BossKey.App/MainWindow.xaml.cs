@@ -653,75 +653,88 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
     private void OpenSettingsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        PersistSettings();
-        var dialog = new SettingsWindow(_settings) { Owner = this };
-        if (dialog.ShowDialog() != true)
+        try
         {
-            return;
+            PersistSettings();
+            var dialog = new SettingsWindow(_settings) { Owner = this };
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var previousRunAsAdministrator = _settings.RunAsAdministrator;
+
+            _settings.HideHotkey = HotkeyBinding.FromKeys(dialog.UpdatedSettings.HideHotkey.Keys);
+            _settings.ShowHotkey = HotkeyBinding.FromKeys(dialog.UpdatedSettings.ShowHotkey.Keys);
+            _settings.StartWithWindows = dialog.UpdatedSettings.StartWithWindows;
+            _settings.RunAsAdministrator = dialog.UpdatedSettings.RunAsAdministrator;
+            _settings.MinimizeToTray = dialog.UpdatedSettings.MinimizeToTray;
+            _settings.AutoCheckForUpdates = dialog.UpdatedSettings.AutoCheckForUpdates;
+            _settings.LastUpdateCheckUtc = dialog.UpdatedSettings.LastUpdateCheckUtc;
+            _settings.Language = Localizer.NormalizeLanguage(dialog.UpdatedSettings.Language);
+            _settings.IsLogPanelCollapsed = dialog.UpdatedSettings.IsLogPanelCollapsed;
+            _isLogCollapsed = _settings.IsLogPanelCollapsed;
+            _settings.Targets = dialog.UpdatedSettings.Targets
+                .Select(static target => new TargetAppConfig
+                {
+                    Id = target.Id,
+                    ProcessName = target.ProcessName,
+                    ProcessPath = target.ProcessPath,
+                    Enabled = target.Enabled,
+                    MuteOnHide = target.MuteOnHide,
+                    FreezeOnHide = target.FreezeOnHide
+                })
+                .ToList();
+            _settings.Groups = dialog.UpdatedSettings.Groups
+                .Select(group => new TargetGroupConfig
+                {
+                    Id = group.Id,
+                    Name = group.Name,
+                    HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
+                    ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
+                    IsCollapsed = group.IsCollapsed,
+                    Targets = group.Targets
+                        .Select(static target => new TargetAppConfig
+                        {
+                            Id = target.Id,
+                            ProcessName = target.ProcessName,
+                            ProcessPath = target.ProcessPath,
+                            Enabled = target.Enabled,
+                            MuteOnHide = target.MuteOnHide,
+                            FreezeOnHide = target.FreezeOnHide
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            SyncGroupsFromSettings();
+            _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
+            Localizer.SetLanguage(_settings.Language);
+            ApplyLocalization();
+            PersistSettings();
+
+            if (previousRunAsAdministrator != _settings.RunAsAdministrator)
+            {
+                System.Windows.MessageBox.Show(
+                    this,
+                    Localizer.T("Settings.RunAsAdministratorChanged"),
+                    Localizer.T("Main.HintTitle"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+
+            SetStatus(Localizer.T("Main.StatusSettingsApplied"));
         }
-
-        var previousRunAsAdministrator = _settings.RunAsAdministrator;
-
-        _settings.HideHotkey = HotkeyBinding.FromKeys(dialog.UpdatedSettings.HideHotkey.Keys);
-        _settings.ShowHotkey = HotkeyBinding.FromKeys(dialog.UpdatedSettings.ShowHotkey.Keys);
-        _settings.StartWithWindows = dialog.UpdatedSettings.StartWithWindows;
-        _settings.RunAsAdministrator = dialog.UpdatedSettings.RunAsAdministrator;
-        _settings.MinimizeToTray = dialog.UpdatedSettings.MinimizeToTray;
-        _settings.AutoCheckForUpdates = dialog.UpdatedSettings.AutoCheckForUpdates;
-        _settings.LastUpdateCheckUtc = dialog.UpdatedSettings.LastUpdateCheckUtc;
-        _settings.Language = Localizer.NormalizeLanguage(dialog.UpdatedSettings.Language);
-        _settings.IsLogPanelCollapsed = dialog.UpdatedSettings.IsLogPanelCollapsed;
-        _isLogCollapsed = _settings.IsLogPanelCollapsed;
-        _settings.Targets = dialog.UpdatedSettings.Targets
-            .Select(static target => new TargetAppConfig
-            {
-                Id = target.Id,
-                ProcessName = target.ProcessName,
-                ProcessPath = target.ProcessPath,
-                Enabled = target.Enabled,
-                MuteOnHide = target.MuteOnHide,
-                FreezeOnHide = target.FreezeOnHide
-            })
-            .ToList();
-        _settings.Groups = dialog.UpdatedSettings.Groups
-            .Select(group => new TargetGroupConfig
-            {
-                Id = group.Id,
-                Name = group.Name,
-                HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
-                ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
-                IsCollapsed = group.IsCollapsed,
-                Targets = group.Targets
-                    .Select(static target => new TargetAppConfig
-                    {
-                        Id = target.Id,
-                        ProcessName = target.ProcessName,
-                        ProcessPath = target.ProcessPath,
-                        Enabled = target.Enabled,
-                        MuteOnHide = target.MuteOnHide,
-                        FreezeOnHide = target.FreezeOnHide
-                    })
-                    .ToList()
-            })
-            .ToList();
-
-        SyncGroupsFromSettings();
-        _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
-        Localizer.SetLanguage(_settings.Language);
-        ApplyLocalization();
-        PersistSettings();
-
-        if (previousRunAsAdministrator != _settings.RunAsAdministrator)
+        catch (Exception ex)
         {
             System.Windows.MessageBox.Show(
                 this,
-                Localizer.T("Settings.RunAsAdministratorChanged"),
-                Localizer.T("Main.HintTitle"),
+                ex.Message,
+                Localizer.T("Main.InitErrorTitle"),
                 MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                MessageBoxImage.Error);
+            SetStatus(Localizer.Format("Main.InitErrorText", ex.Message));
         }
-
-        SetStatus(Localizer.T("Main.StatusSettingsApplied"));
     }
 
     private void TitleBar_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -2212,6 +2225,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 }
+
 
 
 

@@ -321,6 +321,139 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <Style x:Key="TargetContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border CornerRadius="12"
+                                Background="#FFFFFFFF"
+                                BorderThickness="1"
+                                BorderBrush="#FFE4E7EB"
+                                Padding="6">
+                            <StackPanel IsItemsHost="True"
+                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SwitchMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="StaysOpenOnClick" Value="True" />
+            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid MinWidth="188">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"
+                                                  ContentSource="Header" />
+
+                                <Grid Grid.Column="1"
+                                      Width="42"
+                                      Height="24"
+                                      Margin="14,0,0,0"
+                                      VerticalAlignment="Center">
+                                    <Border x:Name="SwitchTrack"
+                                            CornerRadius="12"
+                                            BorderThickness="1"
+                                            Background="#FFFFFFFF"
+                                            BorderBrush="#FFDDE3EA">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="8"
+                                                              ShadowDepth="1"
+                                                              Opacity="0.12"
+                                                              Color="#FF000000" />
+                                        </Border.Effect>
+                                    </Border>
+                                    <Border x:Name="SwitchThumb"
+                                            Width="20"
+                                            Height="20"
+                                            Margin="2,0,0,0"
+                                            CornerRadius="10"
+                                            Background="#FFFFFFFF"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="10"
+                                                              ShadowDepth="2"
+                                                              Opacity="0.18"
+                                                              Color="#FF000000" />
+                                        </Border.Effect>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FFF7F8FA" />
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#FFD1D9E3" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SwitchTrack" Property="Background" Value="#FF4CD964" />
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#FF4CD964" />
+                                <Setter TargetName="SwitchThumb" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="SwitchThumb" Property="Margin" Value="0,0,2,0" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True" />
+                                    <Condition Property="IsHighlighted" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Root" Property="Background" Value="#FFF5FBF6" />
+                                <Setter TargetName="SwitchTrack" Property="Background" Value="#FF43C85B" />
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#FF43C85B" />
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ContextActionMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"
+                                              ContentSource="Header" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FFF7F8FA" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Background="#FFF6F8FB">
@@ -589,21 +722,21 @@
                                                                 PreviewMouseLeftButtonDown="TargetTile_PreviewMouseLeftButtonDown"
                                                                 MouseMove="TargetTile_MouseMove">
                                                             <Border.ContextMenu>
-                                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                                    <MenuItem IsCheckable="True"
+                                                                <ContextMenu Style="{StaticResource TargetContextMenuStyle}" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                                    <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                               IsChecked="{Binding Enabled, Mode=TwoWay}"
                                                                               Header="{Binding PlacementTarget.Tag.TargetEnabledText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="ToggleTargetEnabledMenuItem_OnClick" />
-                                                                    <MenuItem IsCheckable="True"
+                                                                    <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                               IsChecked="{Binding MuteOnHide, Mode=TwoWay}"
                                                                               Header="{Binding PlacementTarget.Tag.TargetMuteOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="ToggleTargetMuteMenuItem_OnClick" />
-                                                                    <MenuItem IsCheckable="True"
+                                                                    <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                               IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                               Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="ToggleTargetFreezeMenuItem_OnClick" />
                                                                     <Separator />
-                                                                    <MenuItem Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                    <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="RemoveTargetMenuItem_OnClick" />
                                                                 </ContextMenu>
                                                             </Border.ContextMenu>
@@ -886,21 +1019,21 @@
                                                                                     PreviewMouseLeftButtonDown="TargetTile_PreviewMouseLeftButtonDown"
                                                                                     MouseMove="TargetTile_MouseMove">
                                                                                 <Border.ContextMenu>
-                                                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                                                        <MenuItem IsCheckable="True"
+                                                                                    <ContextMenu Style="{StaticResource TargetContextMenuStyle}" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                                                        <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                                                   IsChecked="{Binding Enabled, Mode=TwoWay}"
                                                                                                   Header="{Binding PlacementTarget.Tag.TargetEnabledText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="ToggleTargetEnabledMenuItem_OnClick" />
-                                                                                        <MenuItem IsCheckable="True"
+                                                                                        <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                                                   IsChecked="{Binding MuteOnHide, Mode=TwoWay}"
                                                                                                   Header="{Binding PlacementTarget.Tag.TargetMuteOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="ToggleTargetMuteMenuItem_OnClick" />
-                                                                                        <MenuItem IsCheckable="True"
+                                                                                        <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
                                                                                                   IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                                                   Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="ToggleTargetFreezeMenuItem_OnClick" />
                                                                                         <Separator />
-                                                                                        <MenuItem Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                        <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="RemoveTargetMenuItem_OnClick" />
                                                                                     </ContextMenu>
                                                                                 </Border.ContextMenu>
@@ -1220,6 +1353,8 @@
         </Grid>
     </Grid>
 </Window>
+
+
 
 
 
