@@ -12,6 +12,6 @@ public sealed class AppSettings
     public bool AutoCheckForUpdates { get; set; } = true;
     public DateTime? LastUpdateCheckUtc { get; set; }
     public bool IsLogPanelCollapsed { get; set; }
-    public string Language { get; set; } = "zh-CN";
+    public string Language { get; set; } = "en-US";
     public WindowPlacementSettings? MainWindowPlacement { get; set; }
 }
