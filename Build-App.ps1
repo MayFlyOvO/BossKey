@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $versionPropsPath = Join-Path $rootDir "build\Version.props"
-$appProject = Join-Path $rootDir "HideProcess.App\HideProcess.App.csproj"
-$issScript = Join-Path $rootDir "installer\HideProcess.iss"
+$appProject = Join-Path $rootDir "BossKey.App\BossKey.App.csproj"
+$issScript = Join-Path $rootDir "installer\BossKey.iss"
 
 function Get-ReleaseVersion {
     param(
@@ -49,7 +49,7 @@ if ($isReleaseBuild) {
     $publishOut = Join-Path $outRoot "publish"
     $singleOut = Join-Path $outRoot "singlefile"
     $installerOut = Join-Path $outRoot "installer"
-    $outputBaseName = "HideProcess-Setup"
+    $outputBaseName = "BossKey-Setup"
 }
 else {
     $outRoot = Join-Path $rootDir "artifacts\test-builds\$Version"
@@ -57,7 +57,7 @@ else {
     $publishOut = Join-Path $outRoot "publish"
     $singleOut = Join-Path $outRoot "singlefile"
     $installerOut = Join-Path $outRoot "installer"
-    $outputBaseName = "HideProcess-Setup-$Version"
+    $outputBaseName = "BossKey-Setup-$Version"
 }
 
 if (-not (Test-Path $appProject)) {
@@ -66,7 +66,7 @@ if (-not (Test-Path $appProject)) {
 
 Write-Host "[INFO] Version: $Version"
 Write-Host "[INFO] Stopping running app to avoid file locks..."
-Get-Process HideProcess.App -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process BossKey.App -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
 Write-Host "[INFO] Cleaning output..."
 if (Test-Path $buildOut) { Remove-Item $buildOut -Recurse -Force }
@@ -133,9 +133,9 @@ $publishSingleFileCommand = @(
 ) + $versionArgs
 Invoke-Step "[4/6] Publish Single-File (self-contained, $rid)..." $publishSingleFileCommand
 
-$singleFileExe = Join-Path $singleOut "HideProcess.App.exe"
+$singleFileExe = Join-Path $singleOut "BossKey.App.exe"
 if (Test-Path $singleFileExe) {
-    Copy-Item $singleFileExe (Join-Path $singleOut "HideProcess-SingleFile.exe") -Force
+    Copy-Item $singleFileExe (Join-Path $singleOut "BossKey-SingleFile.exe") -Force
 }
 
 Write-Host "[5/6] Build Installer (Inno Setup)..."
@@ -143,7 +143,7 @@ if (-not (Test-Path $issScript)) {
     Write-Warning "Installer script not found: $issScript"
     Write-Warning "Skipping installer build."
 }
-elseif (-not (Test-Path (Join-Path $publishOut "HideProcess.App.exe"))) {
+elseif (-not (Test-Path (Join-Path $publishOut "BossKey.App.exe"))) {
     Write-Warning "Publish executable not found. Skipping installer build."
 }
 else {
@@ -164,7 +164,7 @@ else {
         Invoke-Step "    Running ISCC..." @(
             $iscc,
             "/DSourceDir=$publishOut",
-            "/DSourceIcon=$(Join-Path $rootDir 'HideProcess.App\Assets\HideProcess.ico')",
+            "/DSourceIcon=$(Join-Path $rootDir 'BossKey.App\Assets\BossKey.ico')",
             "/DOutputDir=$installerOut",
             "/DMyAppVersion=$Version",
             "/DOutputBaseName=$outputBaseName",
@@ -183,7 +183,7 @@ Write-Host "Multi-file publish output:"
 Write-Host "  $publishOut"
 Write-Host ""
 Write-Host "Single-file publish output:"
-Write-Host "  $(Join-Path $singleOut 'HideProcess-SingleFile.exe')"
+Write-Host "  $(Join-Path $singleOut 'BossKey-SingleFile.exe')"
 Write-Host ""
 Write-Host "Installer output:"
 Write-Host "  $installerOut"

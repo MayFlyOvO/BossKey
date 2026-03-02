@@ -1,6 +1,6 @@
-# HideProcess
+# BossKey
 
-`HideProcess` 是一个用于 Windows 的老板键工具。它可以把你选中的程序窗口立即隐藏，而不是最小化；隐藏后任务栏中不会保留图标，并且可以通过预设热键恢复显示。
+`BossKey` 是一个用于 Windows 的老板键工具。它可以把你选中的程序窗口立即隐藏，而不是最小化；隐藏后任务栏中不会保留图标，并且可以通过预设热键恢复显示。
 
 ## 主要功能
 
@@ -57,13 +57,13 @@
 
 发布地址：
 
-- <https://github.com/MayFlyOvO/HideProcess/releases>
+- <https://github.com/MayFlyOvO/BossKey/releases>
 
 ## 配置文件
 
 程序配置保存在：
 
-- `%APPDATA%\HideProcess\settings.json`
+- `%APPDATA%\BossKey\settings.json`
 
 ## 运行环境
 
@@ -74,8 +74,8 @@
 ## 本地运行
 
 ```powershell
-dotnet build HideProcess.sln
-dotnet run --project .\HideProcess.App\HideProcess.App.csproj
+dotnet build BossKey.sln
+dotnet run --project .\BossKey.App\BossKey.App.csproj
 ```
 
 ## 正式构建

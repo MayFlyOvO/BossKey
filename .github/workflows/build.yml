@@ -28,14 +28,14 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore HideProcess.sln
+        run: dotnet restore BossKey.sln
 
       - name: Build
-        run: dotnet build HideProcess.sln -c Release --no-restore
+        run: dotnet build BossKey.sln -c Release --no-restore
 
       - name: Publish Multi-File (self-contained)
         run: >
-          dotnet publish .\HideProcess.App\HideProcess.App.csproj
+          dotnet publish .\BossKey.App\BossKey.App.csproj
           -c Release
           -r win-x64
           --self-contained true
@@ -47,7 +47,7 @@ jobs:
 
       - name: Publish Single-File (self-contained)
         run: >
-          dotnet publish .\HideProcess.App\HideProcess.App.csproj
+          dotnet publish .\BossKey.App\BossKey.App.csproj
           -c Release
           -r win-x64
           --self-contained true
@@ -76,23 +76,23 @@ jobs:
 
           & $iscc `
             "/DSourceDir=$pwd\artifacts\publish" `
-            "/DSourceIcon=$pwd\HideProcess.App\Assets\HideProcess.ico" `
+            "/DSourceIcon=$pwd\BossKey.App\Assets\BossKey.ico" `
             "/DOutputDir=$pwd\artifacts\installer" `
-            "$pwd\installer\HideProcess.iss"
+            "$pwd\installer\BossKey.iss"
 
       - name: Prepare Release Assets
         shell: powershell
         run: |
-          Copy-Item ".\artifacts\singlefile\HideProcess.App.exe" ".\artifacts\singlefile\HideProcess-SingleFile.exe" -Force
+          Copy-Item ".\artifacts\singlefile\BossKey.App.exe" ".\artifacts\singlefile\BossKey-SingleFile.exe" -Force
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: hideprocess-win-x64
+          name: bosskey-win-x64
           path: |
             artifacts/publish/**
-            artifacts/singlefile/HideProcess-SingleFile.exe
-            artifacts/installer/HideProcess-Setup.exe
+            artifacts/singlefile/BossKey-SingleFile.exe
+            artifacts/installer/BossKey-Setup.exe
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -100,5 +100,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/singlefile/HideProcess-SingleFile.exe
-            artifacts/installer/HideProcess-Setup.exe
+            artifacts/singlefile/BossKey-SingleFile.exe
+            artifacts/installer/BossKey-Setup.exe
