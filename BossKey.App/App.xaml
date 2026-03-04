@@ -2,5 +2,122 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
+        <Style x:Key="ThemedScrollBarPageButtonStyle" TargetType="RepeatButton">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemedVerticalScrollBarThumbStyle" TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Width" Value="6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="ThumbRoot"
+                                Margin="0,1"
+                                CornerRadius="3"
+                                Background="{DynamicResource Theme.ScrollBarThumbBrush}" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ThumbRoot" Property="Background" Value="{DynamicResource Theme.ScrollBarThumbHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="ThumbRoot" Property="Background" Value="{DynamicResource Theme.ScrollBarThumbPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ThumbRoot" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemedHorizontalScrollBarThumbStyle" TargetType="Thumb" BasedOn="{StaticResource ThemedVerticalScrollBarThumbStyle}">
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="6" />
+            <Setter Property="MinWidth" Value="22" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+
+        <ControlTemplate x:Key="VerticalScrollBarTemplate" TargetType="ScrollBar">
+            <Border Width="{TemplateBinding Width}"
+                    Background="Transparent">
+                <Grid Margin="1,2,1,2">
+                    <Border CornerRadius="3"
+                            Background="{DynamicResource Theme.ScrollBarTrackBrush}" />
+                    <Track x:Name="PART_Track"
+                           IsDirectionReversed="True"
+                            Focusable="False">
+                        <Track.DecreaseRepeatButton>
+                            <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
+                                          Style="{StaticResource ThemedScrollBarPageButtonStyle}" />
+                        </Track.DecreaseRepeatButton>
+                        <Track.Thumb>
+                            <Thumb Style="{StaticResource ThemedVerticalScrollBarThumbStyle}" />
+                        </Track.Thumb>
+                        <Track.IncreaseRepeatButton>
+                            <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
+                                          Style="{StaticResource ThemedScrollBarPageButtonStyle}" />
+                        </Track.IncreaseRepeatButton>
+                    </Track>
+                </Grid>
+            </Border>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="HorizontalScrollBarTemplate" TargetType="ScrollBar">
+            <Border Height="{TemplateBinding Height}"
+                    Background="Transparent">
+                <Grid Margin="2,1,2,1">
+                    <Border CornerRadius="3"
+                            Background="{DynamicResource Theme.ScrollBarTrackBrush}" />
+                    <Track x:Name="PART_Track"
+                           Focusable="False">
+                        <Track.DecreaseRepeatButton>
+                            <RepeatButton Command="{x:Static ScrollBar.PageLeftCommand}"
+                                          Style="{StaticResource ThemedScrollBarPageButtonStyle}" />
+                        </Track.DecreaseRepeatButton>
+                        <Track.Thumb>
+                            <Thumb Style="{StaticResource ThemedHorizontalScrollBarThumbStyle}" />
+                        </Track.Thumb>
+                        <Track.IncreaseRepeatButton>
+                            <RepeatButton Command="{x:Static ScrollBar.PageRightCommand}"
+                                          Style="{StaticResource ThemedScrollBarPageButtonStyle}" />
+                        </Track.IncreaseRepeatButton>
+                    </Track>
+                </Grid>
+            </Border>
+        </ControlTemplate>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Template" Value="{StaticResource VerticalScrollBarTemplate}" />
+            <Setter Property="Foreground" Value="{DynamicResource Theme.ScrollBarThumbBrush}" />
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Height" Value="8" />
+                    <Setter Property="Width" Value="Auto" />
+                    <Setter Property="Template" Value="{StaticResource HorizontalScrollBarTemplate}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.55" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>

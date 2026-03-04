@@ -14,5 +14,6 @@ public sealed class AppSettings
     public DateTime? LastUpdateCheckUtc { get; set; }
     public bool IsLogPanelCollapsed { get; set; }
     public string Language { get; set; } = "en-US";
+    public ThemeSettings Theme { get; set; } = ThemeSettings.CreateDefault();
     public WindowPlacementSettings? MainWindowPlacement { get; set; }
 }

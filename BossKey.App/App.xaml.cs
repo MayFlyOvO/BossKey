@@ -4,6 +4,7 @@ using System.Security.Principal;
 using System.Threading;
 using System.Windows;
 using BossKey.App.Services;
+using BossKey.Core.Models;
 using BossKey.Core.Services;
 
 namespace BossKey.App;
@@ -42,6 +43,7 @@ public partial class App : System.Windows.Application
         InitializeDuplicateLaunchNotifier();
         HadUnexpectedPreviousExit = _runtimeSessionService.BeginSession();
         base.OnStartup(e);
+        ApplyStartupTheme();
 
         var mainWindow = new MainWindow();
         MainWindow = mainWindow;
@@ -146,9 +148,9 @@ public partial class App : System.Windows.Application
 
                 app.Dispatcher.BeginInvoke(() =>
                 {
-                    System.Windows.MessageBox.Show(
+                    ThemedMessageBox.Show(
                         app.MainWindow,
-                        "BossKey is already running. Please do not start it twice.\n程序已在运行，不能重复启动。",
+                        "BossKey is already running. Please do not start it twice.",
                         "BossKey",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -157,6 +159,19 @@ public partial class App : System.Windows.Application
             this,
             Timeout.Infinite,
             executeOnlyOnce: false);
+    }
+
+    private static void ApplyStartupTheme()
+    {
+        try
+        {
+            var settings = new JsonSettingsStore().Load();
+            ThemeManager.ApplyTheme(settings.Theme);
+        }
+        catch
+        {
+            ThemeManager.ApplyTheme(ThemeSettings.CreateDefault());
+        }
     }
 
     private static void NotifyExistingInstanceAboutDuplicateLaunch()

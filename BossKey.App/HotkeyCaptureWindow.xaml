@@ -5,7 +5,7 @@
         Height="230"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#FFF5F5F7"
+        Background="{DynamicResource Theme.WindowBackgroundBrush}"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewKeyUp="Window_PreviewKeyUp"
         PreviewMouseDown="Window_PreviewMouseDown"
@@ -13,9 +13,9 @@
     <Window.Resources>
         <Style x:Key="NeutralButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="12,9" />
-            <Setter Property="BorderBrush" Value="#FFE4E7EB" />
-            <Setter Property="Background" Value="#FFFFFFFF" />
-            <Setter Property="Foreground" Value="#25313D" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.ButtonNeutralBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ButtonNeutralBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource Theme.ButtonNeutralForegroundBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -29,7 +29,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#FFF7F8FA" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Theme.ButtonNeutralHoverBackgroundBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -38,9 +38,9 @@
         </Style>
 
         <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource NeutralButtonStyle}">
-            <Setter Property="Background" Value="#FF0A84FF" />
-            <Setter Property="BorderBrush" Value="#FF0A84FF" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource Theme.ButtonPrimaryBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Theme.ButtonPrimaryBorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource Theme.ButtonPrimaryForegroundBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -54,8 +54,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#FF0077EE" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#FF0077EE" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Theme.ButtonPrimaryHoverBackgroundBrush}" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Theme.ButtonPrimaryHoverBackgroundBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -75,25 +75,25 @@
 
         <TextBlock x:Name="InstructionTextBlock"
                    FontSize="14"
-                   Foreground="#30353B"
+                   Foreground="{DynamicResource Theme.PrimaryTextBrush}"
                    TextWrapping="Wrap" />
 
         <TextBlock x:Name="CurrentLabelTextBlock"
                    Grid.Row="1"
                    Margin="0,12,0,6"
                    FontSize="13"
-                   Foreground="#69727A" />
+                   Foreground="{DynamicResource Theme.SecondaryTextBrush}" />
 
         <Border Grid.Row="2"
                 Padding="12,10"
                 CornerRadius="10"
                 BorderThickness="1"
-                BorderBrush="#FFE2E5E9"
-                Background="#FFFFFFFF">
+                BorderBrush="{DynamicResource Theme.BorderBrush}"
+                Background="{DynamicResource Theme.SurfaceBackgroundBrush}">
             <TextBlock x:Name="HotkeyPreviewTextBlock"
                        FontSize="17"
                        FontWeight="SemiBold"
-                       Foreground="#1F2933" />
+                       Foreground="{DynamicResource Theme.PrimaryTextBrush}" />
         </Border>
 
         <StackPanel Grid.Row="4"

@@ -104,6 +104,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Closing += MainWindow_OnClosing;
         Closed += MainWindow_OnClosed;
         Localizer.LanguageChanged += Localizer_OnLanguageChanged;
+        ThemeManager.ThemeApplied += ThemeManager_OnThemeApplied;
         _windowPickerService.HoverTargetChanged += WindowPickerService_OnHoverTargetChanged;
     }
 
@@ -390,8 +391,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _settings = _settingsStore.Load();
             _settings.Language = Localizer.NormalizeStoredLanguage(_settings.Language);
+            _settings.Theme = ThemeSettings.Normalize(_settings.Theme);
             _isLogCollapsed = _settings.IsLogPanelCollapsed;
             ApplySavedWindowPlacement();
+            ThemeManager.ApplyTheme(_settings.Theme);
 
             Localizer.SetLanguage(_settings.Language);
             SyncGroupsFromSettings();
@@ -412,7 +415,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 var warning = Localizer.T("Main.PreviousUncleanExit");
                 AppendLog(warning);
-                System.Windows.MessageBox.Show(
+                ThemedMessageBox.Show(
                     this,
                     warning,
                     Localizer.T("Main.HintTitle"),
@@ -425,7 +428,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.Format("Main.InitErrorText", ex.Message),
                 Localizer.T("Main.InitErrorTitle"),
@@ -474,6 +477,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _hwndSource?.RemoveHook(WndProc);
         _hwndSource = null;
         Localizer.LanguageChanged -= Localizer_OnLanguageChanged;
+        ThemeManager.ThemeApplied -= ThemeManager_OnThemeApplied;
         _windowPickerService.HoverTargetChanged -= WindowPickerService_OnHoverTargetChanged;
         _windowPickerService.Dispose();
         _windowPickerHighlightWindow.Close();
@@ -554,6 +558,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Dispatcher.Invoke(ApplyLocalization);
     }
 
+    private void ThemeManager_OnThemeApplied(object? sender, EventArgs e)
+    {
+        Dispatcher.Invoke(UpdateThemeToggleButton);
+    }
+
     private void WindowPickerService_OnHoverTargetChanged(object? sender, WindowPickerHoverChangedEventArgs e)
     {
         Dispatcher.BeginInvoke(() =>
@@ -583,7 +592,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (RunningTargetsComboBox.SelectedItem is not RunningTargetItem selected)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.T("Main.SelectRunningTarget"),
                 Localizer.T("Main.HintTitle"),
@@ -610,7 +619,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.Format("Main.InitErrorText", ex.Message),
                 Localizer.T("Main.InitErrorTitle"),
@@ -684,6 +693,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         ShowTargets();
     }
+
+    private void ToggleThemeButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        _settings.Theme.ActiveMode = string.Equals(ThemeModes.Normalize(_settings.Theme.ActiveMode), ThemeModes.Dark, StringComparison.Ordinal)
+            ? ThemeModes.Light
+            : ThemeModes.Dark;
+
+        ThemeManager.ApplyTheme(_settings.Theme);
+        PersistSettings();
+        UpdateThemeToggleButton();
+    }
+
     private void OpenSettingsButton_OnClick(object sender, RoutedEventArgs e)
     {
         try
@@ -707,6 +728,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _settings.Language = Localizer.NormalizeStoredLanguage(dialog.UpdatedSettings.Language);
             _settings.SelectedGroupHotkeyId = dialog.UpdatedSettings.SelectedGroupHotkeyId;
             _settings.IsLogPanelCollapsed = dialog.UpdatedSettings.IsLogPanelCollapsed;
+            _settings.Theme = dialog.UpdatedSettings.Theme.Clone();
             _isLogCollapsed = _settings.IsLogPanelCollapsed;
             _settings.Targets = dialog.UpdatedSettings.Targets
                 .Select(static target => new TargetAppConfig
@@ -749,12 +771,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             SyncGroupsFromSettings();
             _globalHotkeyService.UpdateBindings(BuildHotkeyRoutes());
             Localizer.SetLanguage(_settings.Language);
+            ThemeManager.ApplyTheme(_settings.Theme);
             ApplyLocalization();
             PersistSettings();
 
             if (previousRunAsAdministrator != _settings.RunAsAdministrator)
             {
-                System.Windows.MessageBox.Show(
+                ThemedMessageBox.Show(
                     this,
                     Localizer.T("Settings.RunAsAdministratorChanged"),
                     Localizer.T("Main.HintTitle"),
@@ -766,7 +789,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 ex.Message,
                 Localizer.T("Main.InitErrorTitle"),
@@ -1115,11 +1138,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private TargetGroupViewModel CreateNewGroup()
     {
+        var palette = ThemeManager.CurrentTheme.GetActivePalette();
         var group = new TargetGroupViewModel(new TargetGroupConfig
         {
             Id = Guid.NewGuid().ToString("N"),
             Name = string.Empty,
-            IconColor = TargetGroupConfig.CreateRandomLightIconColor()
+            IconColor = TargetGroupConfig.CreateRandomLightIconColor(palette.GroupIconColor)
         });
         _groupCards.Add(group);
         _visibleGroupCards.Add(group);
@@ -1255,7 +1279,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var result = System.Windows.MessageBox.Show(
+        var result = ThemedMessageBox.Show(
             this,
             Localizer.Format("Main.GroupDeletePrompt", group.DisplayName),
             Localizer.T("Main.GroupDeleteTitle"),
@@ -1808,6 +1832,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         HideNowButtonTextBlock.Text = Localizer.T("Main.HideNow");
         ShowNowButtonTextBlock.Text = Localizer.T("Main.ShowNow");
         OpenSettingsButtonTextBlock.Text = Localizer.T("Main.OpenSettings");
+        UpdateThemeToggleButton();
         LogTitleTextBlock.Text = Localizer.T("Main.LogTitle");
         ClearLogsButtonTextBlock.Text = Localizer.T("Main.ClearLogs");
         RemoveButtonText = Localizer.T("Main.Remove");
@@ -1838,6 +1863,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateLogPanelState();
         BuildTrayMenu();
     }
+
+    private void UpdateThemeToggleButton()
+    {
+        var isDark = string.Equals(ThemeModes.Normalize(_settings.Theme.ActiveMode), ThemeModes.Dark, StringComparison.Ordinal);
+        ThemeToggleGlyphTextBlock.Text = isDark ? "☀" : "☾";
+        ThemeToggleGlyphTextBlock.FontFamily = new System.Windows.Media.FontFamily("Segoe UI Symbol");
+        ThemeToggleGlyphTextBlock.FontSize = isDark ? 14 : 15;
+        ToggleThemeButton.ToolTip = Localizer.T(isDark ? "Main.SwitchToLightTheme" : "Main.SwitchToDarkTheme");
+    }
+
     private void ToggleWindowState()
     {
         WindowState = WindowState == WindowState.Maximized
@@ -1941,7 +1976,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 if (manualCheck)
                 {
                     SetStatus(Localizer.T("Update.StatusNoUpdate"));
-                    System.Windows.MessageBox.Show(
+                    ThemedMessageBox.Show(
                         dialogOwner ?? this,
                         Localizer.Format("Update.NoUpdateMessage", currentVersion),
                         Localizer.T("Update.NoUpdateTitle"),
@@ -1958,7 +1993,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 SetStatus(Localizer.Format("Update.StatusCheckFailed", error));
                 if (manualCheck)
                 {
-                    System.Windows.MessageBox.Show(
+                    ThemedMessageBox.Show(
                         dialogOwner ?? this,
                         Localizer.Format("Update.CheckFailed", error),
                         Localizer.T("Update.CheckFailedTitle"),
@@ -1986,7 +2021,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 message += $"{Environment.NewLine}{Environment.NewLine}{Localizer.T("Update.ReleaseNotesLabel")}{Environment.NewLine}{releaseNotes}";
             }
 
-            var choice = System.Windows.MessageBox.Show(
+            var choice = ThemedMessageBox.Show(
                 dialogOwner ?? this,
                 message,
                 Localizer.T("Update.AvailableTitle"),
@@ -2006,7 +2041,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     return false;
                 }
 
-                System.Windows.MessageBox.Show(
+                ThemedMessageBox.Show(
                     dialogOwner ?? this,
                     Localizer.T("Update.NoInstallerAsset"),
                     Localizer.T("Update.CheckFailedTitle"),
@@ -2045,7 +2080,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 HideUpdateDownloadOverlay();
                 SetStatus(Localizer.Format("Update.StatusDownloadFailed", ex.Message));
-                System.Windows.MessageBox.Show(
+                ThemedMessageBox.Show(
                     dialogOwner ?? this,
                     Localizer.Format("Update.DownloadFailed", ex.Message),
                     Localizer.T("Update.CheckFailedTitle"),

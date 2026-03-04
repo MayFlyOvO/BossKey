@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Navigation;
 using BossKey.App.Localization;
+using BossKey.App.Services;
 
 namespace BossKey.App;
 

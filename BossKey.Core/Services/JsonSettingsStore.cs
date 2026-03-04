@@ -84,6 +84,7 @@ public sealed class JsonSettingsStore
         settings.HideHotkey = NormalizeHotkeyBinding(settings.HideHotkey, defaults.HideHotkey);
         settings.ShowHotkey = NormalizeHotkeyBinding(settings.ShowHotkey, defaults.ShowHotkey);
         settings.Language = string.IsNullOrWhiteSpace(settings.Language) ? defaults.Language : settings.Language;
+        settings.Theme = ThemeSettings.Normalize(settings.Theme);
         foreach (var target in settings.Targets)
         {
             EnsureTargetDefaults(target);

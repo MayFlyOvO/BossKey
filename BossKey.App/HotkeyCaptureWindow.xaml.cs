@@ -109,7 +109,7 @@ public partial class HotkeyCaptureWindow : Window
                 return;
             }
 
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.T("Hotkey.Empty", _languageCode),
                 Localizer.T("Main.HintTitle", _languageCode),

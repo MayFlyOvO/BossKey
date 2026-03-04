@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 using BossKey.App.Localization;
+using BossKey.App.Services;
 using BossKey.Core.Models;
 using BossKey.Core.Services;
 using Win32 = Microsoft.Win32;
@@ -23,6 +24,7 @@ public partial class SettingsWindow : Window
 
     private readonly JsonSettingsStore _settingsStore = new();
     private readonly ObservableCollection<GroupHotkeyOption> _groupHotkeyOptions = [];
+    private readonly ThemeSettings _originalThemeSettings;
     private AppSettings _workingCopy;
     private string _previewLanguage;
     private string? _selectedGroupHotkeyId;
@@ -36,6 +38,7 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _workingCopy = CloneSettings(settings);
         UpdatedSettings = CloneSettings(settings);
+        _originalThemeSettings = ThemeSettings.Normalize(settings.Theme).Clone();
         _previewLanguage = Localizer.NormalizeLanguage(settings.Language);
 
         GroupHotkeyComboBox.ItemsSource = _groupHotkeyOptions;
@@ -160,11 +163,12 @@ public partial class SettingsWindow : Window
         {
             _workingCopy = CloneSettings(_settingsStore.ImportFromPath(dialog.FileName));
             _previewLanguage = Localizer.NormalizeLanguage(_workingCopy.Language);
+            ThemeManager.ApplyTheme(_workingCopy.Theme);
             SyncControlsFromWorkingCopy();
             ApplyLocalization();
             UpdateHotkeyPreview();
             UpdateHotkeyConflictWarning();
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.T("Settings.ImportSuccess", _previewLanguage),
                 Localizer.T("Main.HintTitle", _previewLanguage),
@@ -173,7 +177,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 string.Format(Localizer.T("Settings.ImportFailed", _previewLanguage), ex.Message),
                 Localizer.T("Main.InitErrorTitle", _previewLanguage),
@@ -202,7 +206,7 @@ public partial class SettingsWindow : Window
         try
         {
             _settingsStore.ExportToPath(_workingCopy, dialog.FileName);
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 Localizer.T("Settings.ExportSuccess", _previewLanguage),
                 Localizer.T("Main.HintTitle", _previewLanguage),
@@ -211,7 +215,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 string.Format(Localizer.T("Settings.ExportFailed", _previewLanguage), ex.Message),
                 Localizer.T("Main.InitErrorTitle", _previewLanguage),
@@ -233,7 +237,7 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        System.Windows.MessageBox.Show(
+        ThemedMessageBox.Show(
             this,
             Localizer.T("Update.CheckFailed", _previewLanguage).Replace("{0}", "Main window not available."),
             Localizer.T("Update.CheckFailedTitle", _previewLanguage),
@@ -248,6 +252,25 @@ public partial class SettingsWindow : Window
             Owner = this
         };
         dialog.ShowDialog();
+    }
+
+    private void OpenThemeSettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ThemeSettingsWindow(_workingCopy.Theme, _previewLanguage)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            ThemeManager.ApplyTheme(_workingCopy.Theme);
+            UpdateThemeSummary();
+            return;
+        }
+
+        _workingCopy.Theme = dialog.UpdatedTheme.Clone();
+        ThemeManager.ApplyTheme(_workingCopy.Theme);
+        UpdateThemeSummary();
     }
 
     private async void LanguageComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -275,7 +298,7 @@ public partial class SettingsWindow : Window
                     RefreshLanguageOptions();
                     ApplyLocalization();
                     UpdateHotkeyConflictWarning();
-                    System.Windows.MessageBox.Show(
+                    ThemedMessageBox.Show(
                         this,
                         string.Format(
                             Localizer.T("Settings.DownloadLanguageFailed", previousPreviewLanguage),
@@ -318,7 +341,7 @@ public partial class SettingsWindow : Window
 
             if (result.Succeeded)
             {
-                System.Windows.MessageBox.Show(
+                ThemedMessageBox.Show(
                     this,
                     Localizer.T("Settings.SyncLanguagesSuccess", _previewLanguage),
                     Localizer.T("Main.HintTitle", _previewLanguage),
@@ -327,7 +350,7 @@ public partial class SettingsWindow : Window
                 return;
             }
 
-            System.Windows.MessageBox.Show(
+            ThemedMessageBox.Show(
                 this,
                 string.Format(
                     Localizer.T("Settings.SyncLanguagesFailed", _previewLanguage),
@@ -363,6 +386,7 @@ public partial class SettingsWindow : Window
     private void CancelButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+        ThemeManager.ApplyTheme(_originalThemeSettings);
         Close();
     }
 
@@ -377,6 +401,7 @@ public partial class SettingsWindow : Window
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+        ThemeManager.ApplyTheme(_originalThemeSettings);
         Close();
     }
 
@@ -385,6 +410,7 @@ public partial class SettingsWindow : Window
         Dispatcher.Invoke(() =>
         {
             _previewLanguage = Localizer.NormalizeLanguage(_workingCopy.Language);
+            ThemeManager.ApplyTheme(_workingCopy.Theme);
             RefreshLanguageOptions();
             ApplyLocalization();
             UpdateHotkeyConflictWarning();
@@ -429,10 +455,14 @@ public partial class SettingsWindow : Window
         ExportButtonTextBlock.Text = Localizer.T("Settings.Export", _previewLanguage);
         CheckUpdatesButtonTextBlock.Text = Localizer.T("Settings.CheckUpdatesNow", _previewLanguage);
         SyncLanguagesButtonTextBlock.Text = Localizer.T("Settings.SyncLanguages", _previewLanguage);
+        ThemeLabel.Text = Localizer.T("Settings.Theme", _previewLanguage);
+        OpenThemeSettingsButtonTextBlock.Text = Localizer.T("Settings.CustomizeTheme", _previewLanguage);
         CancelButtonTextBlock.Text = Localizer.T("Settings.Cancel", _previewLanguage);
         SaveButtonTextBlock.Text = Localizer.T("Settings.Save", _previewLanguage);
         AboutButton.ToolTip = Localizer.T("Settings.AboutTooltip", _previewLanguage);
+        OpenThemeSettingsButton.ToolTip = Localizer.T("Settings.CustomizeTheme", _previewLanguage);
         UpdateHotkeyPreview();
+        UpdateThemeSummary();
     }
 
     private void UpdateHotkeyPreview()
@@ -517,6 +547,7 @@ public partial class SettingsWindow : Window
         _selectedGroupHotkeyId = _workingCopy.SelectedGroupHotkeyId;
         RefreshLanguageOptions();
         RefreshGroupHotkeyOptions();
+        UpdateThemeSummary();
     }
 
     private void SyncControlsToWorkingCopy()
@@ -576,6 +607,18 @@ public partial class SettingsWindow : Window
         _selectedGroupHotkeyId = targetSelection?.GroupId;
         _workingCopy.SelectedGroupHotkeyId = _selectedGroupHotkeyId;
         UpdateGroupHotkeyPreview();
+    }
+
+    private void UpdateThemeSummary()
+    {
+        var activeMode = ThemeModes.Normalize(_workingCopy.Theme.ActiveMode);
+        var modeText = string.Equals(activeMode, ThemeModes.Dark, StringComparison.Ordinal)
+            ? Localizer.T("Theme.Dark", _previewLanguage)
+            : Localizer.T("Theme.Light", _previewLanguage);
+        ThemeSummaryTextBlock.Text = string.Format(
+            Localizer.T("Settings.ThemeSummary", _previewLanguage),
+            modeText,
+            _workingCopy.Theme.GetActivePalette().AccentColor);
     }
 
     private void UpdateGroupHotkeyPreview()
@@ -645,6 +688,7 @@ public partial class SettingsWindow : Window
                     Height = source.MainWindowPlacement.Height,
                     WindowState = source.MainWindowPlacement.WindowState
                 },
+            Theme = ThemeSettings.Normalize(source.Theme).Clone(),
             Targets = source.Targets
                 .Select(static target => new TargetAppConfig
                 {
@@ -697,6 +741,7 @@ public partial class SettingsWindow : Window
         destination.IsLogPanelCollapsed = source.IsLogPanelCollapsed;
         destination.Language = Localizer.NormalizeStoredLanguage(source.Language);
         destination.SelectedGroupHotkeyId = source.SelectedGroupHotkeyId;
+        destination.Theme = ThemeSettings.Normalize(source.Theme).Clone();
         destination.MainWindowPlacement = source.MainWindowPlacement is null
             ? null
             : new WindowPlacementSettings

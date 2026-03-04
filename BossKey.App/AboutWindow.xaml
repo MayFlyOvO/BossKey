@@ -10,7 +10,7 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Icon="pack://application:,,,/Assets/BossKey.ico"
-        Background="#FFF6F8FB"
+        Background="{DynamicResource Theme.WindowBackgroundBrush}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         FontFamily="Segoe UI Variable Text">
@@ -27,9 +27,9 @@
             <Setter Property="Width" Value="34" />
             <Setter Property="Height" Value="30" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="#00FFFFFF" />
-            <Setter Property="BorderBrush" Value="#00FFFFFF" />
-            <Setter Property="Foreground" Value="#4B5563" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Theme.IconBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -41,7 +41,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#FFEFF2F6" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Theme.ButtonNeutralHoverBackgroundBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -50,12 +50,12 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="#FFF6F8FB">
+    <Grid Background="{DynamicResource Theme.WindowBackgroundBrush}">
         <Border Margin="0"
                 CornerRadius="14"
-                Background="White"
+                Background="{DynamicResource Theme.WindowBackgroundBrush}"
                 BorderThickness="0"
-                BorderBrush="#00FFFFFF"
+                BorderBrush="Transparent"
                 ClipToBounds="True">
             <Grid>
                 <Grid.RowDefinitions>
@@ -64,7 +64,7 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Background="#FFF7F8FA"
+                      Background="{DynamicResource Theme.ChromeBackgroundBrush}"
                       MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -83,7 +83,7 @@
                                    Margin="8,0,0,0"
                                    FontSize="13"
                                    FontWeight="SemiBold"
-                                   Foreground="#1F2937"
+                                   Foreground="{DynamicResource Theme.PrimaryTextBrush}"
                                    VerticalAlignment="Center" />
                     </StackPanel>
 
@@ -101,13 +101,13 @@
                         Margin="16"
                         Padding="16"
                         CornerRadius="12"
-                        Background="#FFFAFBFD"
+                        Background="{DynamicResource Theme.SurfaceBackgroundBrush}"
                         BorderThickness="1"
-                        BorderBrush="#FFE9EDF3">
+                        BorderBrush="{DynamicResource Theme.BorderStrongBrush}">
                     <StackPanel>
                         <TextBlock x:Name="DescriptionTextBlock"
                                    FontSize="13"
-                                   Foreground="#4A5560" />
+                                   Foreground="{DynamicResource Theme.SecondaryTextBrush}" />
 
                         <Grid Margin="0,14,0,0">
                             <Grid.RowDefinitions>
@@ -124,13 +124,13 @@
 
                             <TextBlock x:Name="VersionLabelTextBlock"
                                        FontSize="13"
-                                       Foreground="#4A5560"
+                                       Foreground="{DynamicResource Theme.SecondaryTextBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="VersionValueTextBlock"
                                        Grid.Column="1"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2937"
+                                       Foreground="{DynamicResource Theme.PrimaryTextBrush}"
                                        TextWrapping="Wrap"
                                        VerticalAlignment="Center" />
 
@@ -138,7 +138,7 @@
                                        Grid.Row="1"
                                        Margin="0,10,0,0"
                                        FontSize="13"
-                                       Foreground="#4A5560"
+                                       Foreground="{DynamicResource Theme.SecondaryTextBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="PackageValueTextBlock"
                                        Grid.Row="1"
@@ -146,7 +146,7 @@
                                        Margin="0,10,0,0"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2937"
+                                       Foreground="{DynamicResource Theme.PrimaryTextBrush}"
                                        TextWrapping="Wrap"
                                        VerticalAlignment="Center" />
 
@@ -154,7 +154,7 @@
                                        Grid.Row="2"
                                        Margin="0,10,0,0"
                                        FontSize="13"
-                                       Foreground="#4A5560"
+                                       Foreground="{DynamicResource Theme.SecondaryTextBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="AuthorValueTextBlock"
                                        Grid.Row="2"
@@ -162,14 +162,14 @@
                                        Margin="0,10,0,0"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2937"
+                                       Foreground="{DynamicResource Theme.PrimaryTextBrush}"
                                        VerticalAlignment="Center" />
 
                             <TextBlock x:Name="GithubLabelTextBlock"
                                        Grid.Row="3"
                                        Margin="0,10,0,0"
                                        FontSize="13"
-                                       Foreground="#4A5560"
+                                       Foreground="{DynamicResource Theme.SecondaryTextBrush}"
                                        VerticalAlignment="Center" />
                              <TextBlock Grid.Row="3"
                                         Grid.Column="1"
@@ -177,17 +177,18 @@
                                         FontSize="13"
                                         VerticalAlignment="Center">
                                  <Hyperlink x:Name="GithubLink"
+                                            Foreground="{DynamicResource Theme.LinkBrush}"
                                             RequestNavigate="GithubLink_OnRequestNavigate">
                                      <Run x:Name="GithubLinkRun" />
                                  </Hyperlink>
                              </TextBlock>
 
                              <TextBlock x:Name="ThirdPartyLabelTextBlock"
-                                        Grid.Row="4"
-                                        Margin="0,10,0,0"
-                                        FontSize="13"
-                                        Foreground="#4A5560"
-                                        VerticalAlignment="Center" />
+                                         Grid.Row="4"
+                                         Margin="0,10,0,0"
+                                         FontSize="13"
+                                         Foreground="{DynamicResource Theme.SecondaryTextBrush}"
+                                         VerticalAlignment="Center" />
                              <TextBlock Grid.Row="4"
                                         Grid.Column="1"
                                         Margin="0,10,0,0"
@@ -195,6 +196,7 @@
                                         TextWrapping="Wrap"
                                         VerticalAlignment="Center">
                                  <Hyperlink x:Name="ThirdPartyLink"
+                                            Foreground="{DynamicResource Theme.LinkBrush}"
                                             RequestNavigate="GithubLink_OnRequestNavigate">
                                      <Run x:Name="ThirdPartyLinkRun" />
                                  </Hyperlink>
