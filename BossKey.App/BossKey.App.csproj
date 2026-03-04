@@ -23,7 +23,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\BossKey.ico</ApplicationIcon>
-    <AppVersion Condition="'$(AppVersion)' == ''">1.4.5</AppVersion>
+    <AppVersion Condition="'$(AppVersion)' == ''">1.4.6</AppVersion>
     <Version Condition="'$(Version)' == ''">$(AppVersion)</Version>
     <FileVersion Condition="'$(FileVersion)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(AppVersion)', '^\d+\.\d+\.\d+$'))">$(AppVersion).0</FileVersion>
     <FileVersion Condition="'$(FileVersion)' == ''">$(AppVersion)</FileVersion>
