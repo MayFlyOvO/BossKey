@@ -92,6 +92,7 @@ public sealed class JsonSettingsStore
         foreach (var group in settings.Groups)
         {
             group.Id = string.IsNullOrWhiteSpace(group.Id) ? Guid.NewGuid().ToString("N") : group.Id;
+            group.IconColor = TargetGroupConfig.NormalizeIconColor(group.IconColor, group.Id);
             group.Targets ??= [];
             group.HideHotkey = NormalizeHotkeyBinding(group.HideHotkey, new HotkeyBinding());
             group.ShowHotkey = NormalizeHotkeyBinding(group.ShowHotkey, new HotkeyBinding());
@@ -107,6 +108,7 @@ public sealed class JsonSettingsStore
             {
                 Id = TargetGroupConfig.DefaultGroupId,
                 Name = string.Empty,
+                IconColor = TargetGroupConfig.GetDefaultIconColor(TargetGroupConfig.DefaultGroupId),
                 Targets = settings.Targets
                     .Select(static target => new TargetAppConfig
                     {
@@ -129,7 +131,8 @@ public sealed class JsonSettingsStore
             defaultGroup = new TargetGroupConfig
             {
                 Id = TargetGroupConfig.DefaultGroupId,
-                Name = string.Empty
+                Name = string.Empty,
+                IconColor = TargetGroupConfig.GetDefaultIconColor(TargetGroupConfig.DefaultGroupId)
             };
             settings.Groups.Insert(0, defaultGroup);
         }

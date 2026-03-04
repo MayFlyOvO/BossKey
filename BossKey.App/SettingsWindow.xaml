@@ -311,6 +311,29 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <DataTemplate x:Key="GroupHotkeyOptionTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Border Width="22"
+                        Height="22"
+                        CornerRadius="7"
+                        Background="{Binding IconColor}"
+                        BorderThickness="1"
+                        BorderBrush="{Binding IconColor}"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="&#xE8B7;"
+                               FontFamily="Segoe Fluent Icons"
+                               FontSize="11"
+                               Foreground="#4B6B8A"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center" />
+                </Border>
+                <TextBlock Margin="8,0,0,0"
+                           VerticalAlignment="Center"
+                           Foreground="#25313D"
+                           Text="{Binding DisplayName}" />
+            </StackPanel>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid Background="#FFF6F8FB">
@@ -528,7 +551,7 @@
                                       Height="40"
                                       Style="{StaticResource RoundedComboBoxStyle}"
                                       ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
-                                      DisplayMemberPath="DisplayName"
+                                      ItemTemplate="{StaticResource GroupHotkeyOptionTemplate}"
                                       VerticalContentAlignment="Center"
                                       SelectionChanged="GroupHotkeyComboBox_OnSelectionChanged" />
 

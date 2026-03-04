@@ -561,7 +561,10 @@ public partial class SettingsWindow : Window
 
         foreach (var group in _workingCopy.Groups)
         {
-            _groupHotkeyOptions.Add(new GroupHotkeyOption(group.Id, GetGroupDisplayName(group)));
+            _groupHotkeyOptions.Add(new GroupHotkeyOption(
+                group.Id,
+                GetGroupDisplayName(group),
+                TargetGroupConfig.NormalizeIconColor(group.IconColor, group.Id)));
         }
 
         var targetSelection = _groupHotkeyOptions.FirstOrDefault(option =>
@@ -659,6 +662,7 @@ public partial class SettingsWindow : Window
                 {
                     Id = group.Id,
                     Name = group.Name,
+                    IconColor = group.IconColor,
                     HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
                     ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
                     IsCollapsed = group.IsCollapsed,
@@ -718,6 +722,7 @@ public partial class SettingsWindow : Window
             {
                 Id = group.Id,
                 Name = group.Name,
+                IconColor = group.IconColor,
                 HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
                 ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
                 IsCollapsed = group.IsCollapsed,
@@ -737,7 +742,7 @@ public partial class SettingsWindow : Window
             .ToList();
     }
 
-    private sealed record GroupHotkeyOption(string GroupId, string DisplayName)
+    private sealed record GroupHotkeyOption(string GroupId, string DisplayName, string IconColor)
     {
         public override string ToString()
         {

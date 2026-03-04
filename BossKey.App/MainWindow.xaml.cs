@@ -709,6 +709,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 {
                     Id = group.Id,
                     Name = group.Name,
+                    IconColor = group.IconColor,
                     HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
                     ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
                     IsCollapsed = group.IsCollapsed,
@@ -897,6 +898,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 Id = group.Id,
                 Name = group.Name,
+                IconColor = group.IconColor,
                 HideHotkey = HotkeyBinding.FromKeys(group.HideHotkey.Keys),
                 ShowHotkey = HotkeyBinding.FromKeys(group.ShowHotkey.Keys),
                 IsCollapsed = group.IsCollapsed,
@@ -1079,7 +1081,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         defaultGroup = new TargetGroupViewModel(new TargetGroupConfig
         {
             Id = TargetGroupConfig.DefaultGroupId,
-            Name = string.Empty
+            Name = string.Empty,
+            IconColor = TargetGroupConfig.GetDefaultIconColor(TargetGroupConfig.DefaultGroupId)
         });
         _groupCards.Insert(0, defaultGroup);
         _defaultGroupCard = defaultGroup;
@@ -1093,7 +1096,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var group = new TargetGroupViewModel(new TargetGroupConfig
         {
             Id = Guid.NewGuid().ToString("N"),
-            Name = string.Empty
+            Name = string.Empty,
+            IconColor = TargetGroupConfig.CreateRandomLightIconColor()
         });
         _groupCards.Add(group);
         _visibleGroupCards.Add(group);

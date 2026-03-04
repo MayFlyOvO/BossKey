@@ -30,6 +30,7 @@ public sealed class TargetGroupViewModel : INotifyPropertyChanged
     public ObservableCollection<TargetTileViewModel> Targets { get; }
     public string Id => _config.Id;
     public bool IsDefaultGroup => string.Equals(_config.Id, TargetGroupConfig.DefaultGroupId, StringComparison.OrdinalIgnoreCase);
+    public string IconColor => TargetGroupConfig.NormalizeIconColor(_config.IconColor, _config.Id);
 
     public string Name
     {
