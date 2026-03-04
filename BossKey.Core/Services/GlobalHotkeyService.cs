@@ -29,8 +29,10 @@ public sealed class GlobalHotkeyService : IDisposable
     private readonly object _syncLock = new();
     private readonly HashSet<int> _activeSuppressedChord = [];
     private readonly List<RouteState> _routes = [];
-    private NativeMethods.LowLevelKeyboardProc? _hookProc;
-    private IntPtr _hookHandle;
+    private NativeMethods.LowLevelKeyboardProc? _keyboardHookProc;
+    private NativeMethods.LowLevelMouseProc? _mouseHookProc;
+    private IntPtr _keyboardHookHandle;
+    private IntPtr _mouseHookHandle;
     private bool _disposed;
 
     public event EventHandler<HotkeyTriggeredEventArgs>? HotkeyTriggered;
@@ -68,29 +70,45 @@ public sealed class GlobalHotkeyService : IDisposable
     public void Start()
     {
         ThrowIfDisposed();
-        if (_hookHandle != IntPtr.Zero)
+        if (_keyboardHookHandle != IntPtr.Zero || _mouseHookHandle != IntPtr.Zero)
         {
             return;
         }
 
-        _hookProc = HookCallback;
-        _hookHandle = NativeMethods.SetWindowsHookEx(NativeMethods.WhKeyboardLl, _hookProc, IntPtr.Zero, 0);
-        if (_hookHandle == IntPtr.Zero)
+        _keyboardHookProc = KeyboardHookCallback;
+        _mouseHookProc = MouseHookCallback;
+
+        _keyboardHookHandle = NativeMethods.SetWindowsHookEx(NativeMethods.WhKeyboardLl, _keyboardHookProc, IntPtr.Zero, 0);
+        if (_keyboardHookHandle == IntPtr.Zero)
         {
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to install low-level keyboard hook.");
+        }
+
+        _mouseHookHandle = NativeMethods.SetWindowsHookEx(NativeMethods.WhMouseLl, _mouseHookProc, IntPtr.Zero, 0);
+        if (_mouseHookHandle == IntPtr.Zero)
+        {
+            var error = Marshal.GetLastWin32Error();
+            Stop();
+            throw new Win32Exception(error, "Failed to install low-level mouse hook.");
         }
     }
 
     public void Stop()
     {
-        if (_hookHandle == IntPtr.Zero)
+        if (_keyboardHookHandle != IntPtr.Zero)
         {
-            return;
+            NativeMethods.UnhookWindowsHookEx(_keyboardHookHandle);
+            _keyboardHookHandle = IntPtr.Zero;
         }
 
-        NativeMethods.UnhookWindowsHookEx(_hookHandle);
-        _hookHandle = IntPtr.Zero;
-        _hookProc = null;
+        if (_mouseHookHandle != IntPtr.Zero)
+        {
+            NativeMethods.UnhookWindowsHookEx(_mouseHookHandle);
+            _mouseHookHandle = IntPtr.Zero;
+        }
+
+        _keyboardHookProc = null;
+        _mouseHookProc = null;
         lock (_syncLock)
         {
             _pressedKeys.Clear();
@@ -115,11 +133,11 @@ public sealed class GlobalHotkeyService : IDisposable
         _disposed = true;
     }
 
-    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         if (nCode < 0)
         {
-            return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+            return NativeMethods.CallNextHookEx(_keyboardHookHandle, nCode, wParam, lParam);
         }
 
         var message = wParam.ToInt32();
@@ -127,11 +145,38 @@ public sealed class GlobalHotkeyService : IDisposable
         var key = VirtualKeyCodes.Normalize((int)hookData.VkCode);
         if (key <= 0)
         {
-            return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+            return NativeMethods.CallNextHookEx(_keyboardHookHandle, nCode, wParam, lParam);
         }
 
         var isKeyDown = message is NativeMethods.WmKeyDown or NativeMethods.WmSysKeyDown;
         var isKeyUp = message is NativeMethods.WmKeyUp or NativeMethods.WmSysKeyUp;
+        if (!isKeyDown && !isKeyUp)
+        {
+            return NativeMethods.CallNextHookEx(_keyboardHookHandle, nCode, wParam, lParam);
+        }
+
+        return ProcessInputHookEvent(_keyboardHookHandle, nCode, wParam, lParam, key, isKeyDown);
+    }
+
+    private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode < 0)
+        {
+            return NativeMethods.CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
+        }
+
+        var message = wParam.ToInt32();
+        var hookData = Marshal.PtrToStructure<NativeMethods.MsLlHookStruct>(lParam);
+        if (!VirtualKeyCodes.TryGetMouseButtonFromMessage(message, hookData.MouseData, out var key, out var isMouseDown))
+        {
+            return NativeMethods.CallNextHookEx(_mouseHookHandle, nCode, wParam, lParam);
+        }
+
+        return ProcessInputHookEvent(_mouseHookHandle, nCode, wParam, lParam, key, isMouseDown);
+    }
+
+    private IntPtr ProcessInputHookEvent(IntPtr hookHandle, int nCode, IntPtr wParam, IntPtr lParam, int key, bool isKeyDown)
+    {
         var shouldSuppress = false;
 
         lock (_syncLock)
@@ -147,7 +192,7 @@ public sealed class GlobalHotkeyService : IDisposable
                     shouldSuppress = true;
                 }
             }
-            else if (isKeyUp)
+            else
             {
                 _pressedKeys.Remove(key);
                 ResetFireFlagsWhenChordBroken();
@@ -171,7 +216,7 @@ public sealed class GlobalHotkeyService : IDisposable
 
         return shouldSuppress
             ? new IntPtr(1)
-            : NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+            : NativeMethods.CallNextHookEx(hookHandle, nCode, wParam, lParam);
     }
 
     private HotkeyTrigger? EvaluateHotkeys()

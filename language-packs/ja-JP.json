@@ -1,7 +1,7 @@
 {
     "code": "ja-JP",
     "displayName": "日本語",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "translations": {
         "Main.WindowTitle": "BossKey ボスキー",
         "Main.Title": "BossKey",
@@ -114,12 +114,12 @@
         "Hotkey.Title": "ホットキー入力",
         "Hotkey.TitleHide": "非表示ホットキーを設定",
         "Hotkey.TitleShow": "表示ホットキーを設定",
-        "Hotkey.Instruction": "使用したいキーの組み合わせを押してから、OK をクリックしてください。",
+        "Hotkey.Instruction": "使いたいキーボードまたはマウスボタンの組み合わせを押してから、OK をクリックしてください。",
         "Hotkey.Current": "現在の組み合わせ",
         "Hotkey.Clear": "クリア",
         "Hotkey.Ok": "OK",
         "Hotkey.Cancel": "キャンセル",
-        "Hotkey.Empty": "少なくとも 1 つのキーを押してください。",
+        "Hotkey.Empty": "少なくとも 1 つのキーまたはマウスボタンを押してください。",
         "Update.StatusChecking": "更新を確認しています...",
         "Update.StatusNoUpdate": "現在のバージョンは最新です。",
         "Update.NoUpdateTitle": "更新の確認",

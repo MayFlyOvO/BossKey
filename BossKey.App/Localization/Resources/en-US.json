@@ -1,7 +1,7 @@
 {
     "code": "en-US",
     "displayName": "English",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "translations": {
         "Main.WindowTitle": "BossKey Boss Key",
         "Main.Title": "BossKey",
@@ -114,12 +114,12 @@
         "Hotkey.Title": "Hotkey Capture",
         "Hotkey.TitleHide": "Set Hide Hotkey",
         "Hotkey.TitleShow": "Set Show Hotkey",
-        "Hotkey.Instruction": "Press your preferred key combination, then click OK.",
+        "Hotkey.Instruction": "Press your preferred key or mouse button combination, then click OK.",
         "Hotkey.Current": "Current Combination",
         "Hotkey.Clear": "Clear",
         "Hotkey.Ok": "OK",
         "Hotkey.Cancel": "Cancel",
-        "Hotkey.Empty": "Please press at least one key.",
+        "Hotkey.Empty": "Please press at least one key or mouse button.",
         "Update.StatusChecking": "Checking for updates...",
         "Update.StatusNoUpdate": "You are using the latest version.",
         "Update.NoUpdateTitle": "Check for Updates",

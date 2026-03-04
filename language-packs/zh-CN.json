@@ -1,7 +1,7 @@
 {
     "code": "zh-CN",
     "displayName": "简体中文",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "translations": {
         "Main.WindowTitle": "BossKey 老板键",
         "Main.Title": "BossKey",
@@ -114,12 +114,12 @@
         "Hotkey.Title": "热键捕获",
         "Hotkey.TitleHide": "设置隐藏热键",
         "Hotkey.TitleShow": "设置显示热键",
-        "Hotkey.Instruction": "按下你想要的组合键，然后点击确定。",
+        "Hotkey.Instruction": "按下你想要的键盘或鼠标按键组合，然后点击确定。",
         "Hotkey.Current": "当前组合",
         "Hotkey.Clear": "清空",
         "Hotkey.Ok": "确定",
         "Hotkey.Cancel": "取消",
-        "Hotkey.Empty": "请至少按下一个按键。",
+        "Hotkey.Empty": "请至少按下一个键盘键或鼠标按键。",
         "Update.StatusChecking": "正在检查更新...",
         "Update.StatusNoUpdate": "当前已是最新版本。",
         "Update.NoUpdateTitle": "检查更新",

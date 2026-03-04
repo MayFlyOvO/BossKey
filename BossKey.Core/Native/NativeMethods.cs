@@ -14,7 +14,13 @@ internal static class NativeMethods
     public const int WmSysKeyUp = 0x0105;
     public const int WmMouseMove = 0x0200;
     public const int WmLButtonDown = 0x0201;
+    public const int WmLButtonUp = 0x0202;
     public const int WmRButtonDown = 0x0204;
+    public const int WmRButtonUp = 0x0205;
+    public const int WmMButtonDown = 0x0207;
+    public const int WmMButtonUp = 0x0208;
+    public const int WmXButtonDown = 0x020B;
+    public const int WmXButtonUp = 0x020C;
 
     public const int SwHide = 0;
     public const int SwShowNormal = 1;

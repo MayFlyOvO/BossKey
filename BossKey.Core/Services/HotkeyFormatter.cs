@@ -8,6 +8,11 @@ public static class HotkeyFormatter
 {
     private static readonly Dictionary<int, string> KnownKeyNames = new()
     {
+        [VirtualKeyCodes.LeftMouse] = "Mouse Left",
+        [VirtualKeyCodes.RightMouse] = "Mouse Right",
+        [VirtualKeyCodes.MiddleMouse] = "Mouse Middle",
+        [VirtualKeyCodes.XButton1] = "Mouse X1",
+        [VirtualKeyCodes.XButton2] = "Mouse X2",
         [0x10] = "Shift",
         [0x11] = "Ctrl",
         [0x12] = "Alt",
@@ -31,7 +36,10 @@ public static class HotkeyFormatter
 
     public static string Format(HotkeyBinding binding)
     {
-        var keys = binding.GetNormalizedKeys().Order().ToList();
+        var keys = binding.GetNormalizedKeys()
+            .OrderBy(GetSortBucket)
+            .ThenBy(static key => key)
+            .ToList();
         if (keys.Count == 0)
         {
             return "Not Set";
@@ -68,5 +76,18 @@ public static class HotkeyFormatter
         }
 
         return $"VK_{key:X2}";
+    }
+
+    private static int GetSortBucket(int key)
+    {
+        return key switch
+        {
+            0x11 => 0,
+            0x12 => 1,
+            0x10 => 2,
+            0x5B => 3,
+            VirtualKeyCodes.LeftMouse or VirtualKeyCodes.RightMouse or VirtualKeyCodes.MiddleMouse or VirtualKeyCodes.XButton1 or VirtualKeyCodes.XButton2 => 5,
+            _ => 4
+        };
     }
 }

@@ -7,7 +7,9 @@
         ResizeMode="NoResize"
         Background="#FFF5F5F7"
         PreviewKeyDown="Window_PreviewKeyDown"
-        PreviewKeyUp="Window_PreviewKeyUp">
+        PreviewKeyUp="Window_PreviewKeyUp"
+        PreviewMouseDown="Window_PreviewMouseDown"
+        PreviewMouseUp="Window_PreviewMouseUp">
     <Window.Resources>
         <Style x:Key="NeutralButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="12,9" />

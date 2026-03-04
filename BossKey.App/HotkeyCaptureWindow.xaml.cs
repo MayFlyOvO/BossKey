@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using BossKey.App.Localization;
 using BossKey.Core.Models;
 using BossKey.Core.Native;
@@ -46,6 +47,41 @@ public partial class HotkeyCaptureWindow : Window
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var virtualKey = VirtualKeyCodes.Normalize(KeyInterop.VirtualKeyFromKey(key));
+        if (virtualKey > 0)
+        {
+            _pressedKeys.Remove(virtualKey);
+        }
+
+        e.Handled = true;
+    }
+
+    private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (ShouldIgnoreMouseCapture(e.OriginalSource))
+        {
+            return;
+        }
+
+        var virtualKey = GetMouseVirtualKey(e.ChangedButton);
+        if (virtualKey <= 0)
+        {
+            return;
+        }
+
+        _pressedKeys.Add(virtualKey);
+        _capturedKeys = _pressedKeys.ToHashSet();
+        UpdatePreview();
+        e.Handled = true;
+    }
+
+    private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (ShouldIgnoreMouseCapture(e.OriginalSource))
+        {
+            return;
+        }
+
+        var virtualKey = GetMouseVirtualKey(e.ChangedButton);
         if (virtualKey > 0)
         {
             _pressedKeys.Remove(virtualKey);
@@ -105,5 +141,38 @@ public partial class HotkeyCaptureWindow : Window
     private void UpdatePreview()
     {
         HotkeyPreviewTextBlock.Text = HotkeyFormatter.Format(HotkeyBinding.FromKeys(_capturedKeys));
+    }
+
+    private static int GetMouseVirtualKey(MouseButton button)
+    {
+        return button switch
+        {
+            MouseButton.Left => VirtualKeyCodes.LeftMouse,
+            MouseButton.Right => VirtualKeyCodes.RightMouse,
+            MouseButton.Middle => VirtualKeyCodes.MiddleMouse,
+            MouseButton.XButton1 => VirtualKeyCodes.XButton1,
+            MouseButton.XButton2 => VirtualKeyCodes.XButton2,
+            _ => 0
+        };
+    }
+
+    private static bool ShouldIgnoreMouseCapture(object originalSource)
+    {
+        if (originalSource is not DependencyObject dependencyObject)
+        {
+            return false;
+        }
+
+        while (dependencyObject is not null)
+        {
+            if (dependencyObject is System.Windows.Controls.Button)
+            {
+                return true;
+            }
+
+            dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+        }
+
+        return false;
     }
 }
