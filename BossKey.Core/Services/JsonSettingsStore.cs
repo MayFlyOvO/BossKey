@@ -126,11 +126,18 @@ public sealed class JsonSettingsStore
             string.Equals(group.Id, TargetGroupConfig.DefaultGroupId, StringComparison.OrdinalIgnoreCase));
         if (defaultGroup is null)
         {
-            settings.Groups.Insert(0, new TargetGroupConfig
+            defaultGroup = new TargetGroupConfig
             {
                 Id = TargetGroupConfig.DefaultGroupId,
                 Name = string.Empty
-            });
+            };
+            settings.Groups.Insert(0, defaultGroup);
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.SelectedGroupHotkeyId) ||
+            settings.Groups.All(group => !string.Equals(group.Id, settings.SelectedGroupHotkeyId, StringComparison.Ordinal)))
+        {
+            settings.SelectedGroupHotkeyId = defaultGroup.Id;
         }
 
         settings.Targets = settings.Groups

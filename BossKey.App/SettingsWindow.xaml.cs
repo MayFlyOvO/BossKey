@@ -345,10 +345,8 @@ public partial class SettingsWindow : Window
 
     private void GroupHotkeyComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (GroupHotkeyComboBox.SelectedItem is GroupHotkeyOption option)
-        {
-            _selectedGroupHotkeyId = option.GroupId;
-        }
+        _selectedGroupHotkeyId = (GroupHotkeyComboBox.SelectedItem as GroupHotkeyOption)?.GroupId;
+        _workingCopy.SelectedGroupHotkeyId = _selectedGroupHotkeyId;
 
         UpdateGroupHotkeyPreview();
         UpdateHotkeyConflictWarning();
@@ -440,18 +438,19 @@ public partial class SettingsWindow : Window
 
     private void UpdateHotkeyConflictWarning()
     {
-        var warnings = new List<string>();
+        var globalWarnings = new List<string>();
         var hideKeys = _workingCopy.HideHotkey.GetNormalizedKeys();
         var showKeys = _workingCopy.ShowHotkey.GetNormalizedKeys();
 
         if (hideKeys.Count > 0 && showKeys.Count > 0 && hideKeys.SetEquals(showKeys))
         {
-            warnings.Add(Localizer.T("Settings.HotkeyWarningToggle", _previewLanguage));
+            globalWarnings.Add(Localizer.T("Settings.HotkeyWarningToggle", _previewLanguage));
         }
 
-        AppendBindingWarnings(_workingCopy.HideHotkey, Localizer.T("Settings.HideHotkey", _previewLanguage), warnings);
-        AppendBindingWarnings(_workingCopy.ShowHotkey, Localizer.T("Settings.ShowHotkey", _previewLanguage), warnings);
+        AppendBindingWarnings(_workingCopy.HideHotkey, Localizer.T("Settings.HideHotkey", _previewLanguage), globalWarnings);
+        AppendBindingWarnings(_workingCopy.ShowHotkey, Localizer.T("Settings.ShowHotkey", _previewLanguage), globalWarnings);
 
+        var groupWarnings = new List<string>();
         var selectedGroup = GetSelectedGroupHotkeyTarget();
         if (selectedGroup is not null)
         {
@@ -459,22 +458,28 @@ public partial class SettingsWindow : Window
             var groupShowKeys = selectedGroup.ShowHotkey.GetNormalizedKeys();
             if (groupHideKeys.Count > 0 && groupShowKeys.Count > 0 && groupHideKeys.SetEquals(groupShowKeys))
             {
-                warnings.Add(Localizer.T("Settings.GroupHotkeyWarningToggle", _previewLanguage));
+                groupWarnings.Add(Localizer.T("Settings.GroupHotkeyWarningToggle", _previewLanguage));
             }
 
-            AppendBindingWarnings(selectedGroup.HideHotkey, Localizer.T("Settings.GroupHideHotkey", _previewLanguage), warnings);
-            AppendBindingWarnings(selectedGroup.ShowHotkey, Localizer.T("Settings.GroupShowHotkey", _previewLanguage), warnings);
+            AppendBindingWarnings(selectedGroup.HideHotkey, Localizer.T("Settings.GroupHideHotkey", _previewLanguage), groupWarnings);
+            AppendBindingWarnings(selectedGroup.ShowHotkey, Localizer.T("Settings.GroupShowHotkey", _previewLanguage), groupWarnings);
         }
 
+        UpdateWarningTextBlock(HotkeyConflictTextBlock, globalWarnings);
+        UpdateWarningTextBlock(GroupHotkeyConflictTextBlock, groupWarnings);
+    }
+
+    private static void UpdateWarningTextBlock(System.Windows.Controls.TextBlock textBlock, List<string> warnings)
+    {
         if (warnings.Count == 0)
         {
-            HotkeyConflictTextBlock.Visibility = Visibility.Collapsed;
-            HotkeyConflictTextBlock.Text = string.Empty;
+            textBlock.Visibility = Visibility.Collapsed;
+            textBlock.Text = string.Empty;
             return;
         }
 
-        HotkeyConflictTextBlock.Visibility = Visibility.Visible;
-        HotkeyConflictTextBlock.Text = string.Join(Environment.NewLine, warnings.Select(static warning => $"* {warning}"));
+        textBlock.Visibility = Visibility.Visible;
+        textBlock.Text = string.Join(Environment.NewLine, warnings.Select(static warning => $"* {warning}"));
     }
 
     private void AppendBindingWarnings(HotkeyBinding binding, string label, List<string> warnings)
@@ -503,6 +508,7 @@ public partial class SettingsWindow : Window
         RunAsAdministratorCheckBox.IsChecked = _workingCopy.RunAsAdministrator;
         MinimizeToTrayCheckBox.IsChecked = _workingCopy.MinimizeToTray;
         AutoCheckUpdatesCheckBox.IsChecked = _workingCopy.AutoCheckForUpdates;
+        _selectedGroupHotkeyId = _workingCopy.SelectedGroupHotkeyId;
         RefreshLanguageOptions();
         RefreshGroupHotkeyOptions();
     }
@@ -514,6 +520,7 @@ public partial class SettingsWindow : Window
         _workingCopy.MinimizeToTray = MinimizeToTrayCheckBox.IsChecked == true;
         _workingCopy.AutoCheckForUpdates = AutoCheckUpdatesCheckBox.IsChecked != false;
         _workingCopy.Language = Localizer.NormalizeStoredLanguage(_workingCopy.Language);
+        _workingCopy.SelectedGroupHotkeyId = _selectedGroupHotkeyId;
     }
 
     private void RefreshLanguageOptions()
@@ -543,7 +550,7 @@ public partial class SettingsWindow : Window
 
     private void RefreshGroupHotkeyOptions()
     {
-        var previousSelection = _selectedGroupHotkeyId;
+        var previousSelection = _selectedGroupHotkeyId ?? _workingCopy.SelectedGroupHotkeyId;
         _groupHotkeyOptions.Clear();
 
         foreach (var group in _workingCopy.Groups)
@@ -553,9 +560,12 @@ public partial class SettingsWindow : Window
 
         var targetSelection = _groupHotkeyOptions.FirstOrDefault(option =>
                                   string.Equals(option.GroupId, previousSelection, StringComparison.Ordinal))
+                              ?? _groupHotkeyOptions.FirstOrDefault(option =>
+                                  string.Equals(option.GroupId, TargetGroupConfig.DefaultGroupId, StringComparison.OrdinalIgnoreCase))
                               ?? _groupHotkeyOptions.FirstOrDefault();
         GroupHotkeyComboBox.SelectedItem = targetSelection;
         _selectedGroupHotkeyId = targetSelection?.GroupId;
+        _workingCopy.SelectedGroupHotkeyId = _selectedGroupHotkeyId;
         UpdateGroupHotkeyPreview();
     }
 
@@ -615,6 +625,7 @@ public partial class SettingsWindow : Window
             LastUpdateCheckUtc = source.LastUpdateCheckUtc,
             IsLogPanelCollapsed = source.IsLogPanelCollapsed,
             Language = Localizer.NormalizeStoredLanguage(source.Language),
+            SelectedGroupHotkeyId = source.SelectedGroupHotkeyId,
             MainWindowPlacement = source.MainWindowPlacement is null
                 ? null
                 : new WindowPlacementSettings
@@ -673,6 +684,7 @@ public partial class SettingsWindow : Window
         destination.LastUpdateCheckUtc = source.LastUpdateCheckUtc;
         destination.IsLogPanelCollapsed = source.IsLogPanelCollapsed;
         destination.Language = Localizer.NormalizeStoredLanguage(source.Language);
+        destination.SelectedGroupHotkeyId = source.SelectedGroupHotkeyId;
         destination.MainWindowPlacement = source.MainWindowPlacement is null
             ? null
             : new WindowPlacementSettings

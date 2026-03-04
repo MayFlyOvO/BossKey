@@ -389,6 +389,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="170" />
@@ -499,6 +500,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="170" />
@@ -603,6 +605,15 @@
                                                VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+
+                            <TextBlock x:Name="GroupHotkeyConflictTextBlock"
+                                       Grid.Row="4"
+                                       Grid.ColumnSpan="3"
+                                       Margin="0,12,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="#C2410C"
+                                       FontSize="12"
+                                       Visibility="Collapsed" />
                         </Grid>
                     </Border>
 

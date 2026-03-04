@@ -689,6 +689,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _settings.AutoCheckForUpdates = dialog.UpdatedSettings.AutoCheckForUpdates;
             _settings.LastUpdateCheckUtc = dialog.UpdatedSettings.LastUpdateCheckUtc;
             _settings.Language = Localizer.NormalizeStoredLanguage(dialog.UpdatedSettings.Language);
+            _settings.SelectedGroupHotkeyId = dialog.UpdatedSettings.SelectedGroupHotkeyId;
             _settings.IsLogPanelCollapsed = dialog.UpdatedSettings.IsLogPanelCollapsed;
             _isLogCollapsed = _settings.IsLogPanelCollapsed;
             _settings.Targets = dialog.UpdatedSettings.Targets

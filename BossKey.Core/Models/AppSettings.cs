@@ -6,6 +6,7 @@ public sealed class AppSettings
     public HotkeyBinding ShowHotkey { get; set; } = HotkeyBinding.FromKeys([0x11, 0x12, 0x53]);
     public List<TargetAppConfig> Targets { get; set; } = [];
     public List<TargetGroupConfig> Groups { get; set; } = [];
+    public string? SelectedGroupHotkeyId { get; set; }
     public bool StartWithWindows { get; set; }
     public bool RunAsAdministrator { get; set; }
     public bool MinimizeToTray { get; set; } = true;
