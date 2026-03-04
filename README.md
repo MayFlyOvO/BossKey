@@ -2,42 +2,67 @@
 
 English | [简体中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
 
-BossKey is a Windows desktop utility for quickly hiding, restoring, and organizing selected application windows. It is built for fast “boss key” workflows, but it is also useful as a lightweight window control tool for daily work setups.
+<sub>A more considered Boss Key for Windows, with a cleaner and more polished interface than this category usually gets.</sub>
 
-## Features
+BossKey is a Windows desktop utility for quickly hiding, restoring, and organizing selected application windows. It is built for fast "boss key" workflows, but it is also useful as a lightweight window control tool for daily work setups.
+
+![BossKey main window overview](docs/images/main-window-overview.png)
+
+## Core Workflow
 
 - Hide or restore all selected targets instantly.
+- Add targets from the running window list or by using the window picker.
+- Organize targets into groups, rename groups, collapse groups, and drag targets between groups.
 - Configure global hotkeys and per-group hotkeys.
 - Use keyboard-only hotkeys or keyboard + mouse button combinations such as `Ctrl + Alt + Mouse Middle`.
 - Allow the same hide/show hotkey to act as a toggle.
-- Add targets from the running window list or by using the window picker.
-- Organize targets into groups, rename groups, collapse groups, and drag targets between groups.
-- Configure per-target behaviors from the context menu:
-  - mute on hide
-  - freeze on hide
-  - topmost on show
-  - center on cursor on show
-  - enable or disable a target
-- Run in the tray, start with Windows, minimize to tray on close, and keep a runtime log.
-- Import and export settings.
-- Check for app updates manually or automatically.
-- Use JSON-based language packs:
-  - English is built in
-  - additional languages can be fetched from GitHub and updated locally
-- Customize the UI with a built-in theme system:
-  - default light and dark themes
-  - live theme preview
-  - custom color editor
-  - themed message boxes and dialogs
+
+## Per-Target Controls
+
+Each target can be configured from its context menu. This lets you tune behavior per app instead of applying the same rule to every window.
+
+- enable or disable a target
+- mute on hide
+- freeze on hide
+- topmost on show
+- center on cursor on show
+
+![BossKey target context menu](docs/images/target-context-menu.png)
+
+## Settings
+
+The settings window brings hotkeys, group behavior, language, update checks, and theme access into one place.
+
+- global hotkeys
+- per-group hotkeys
+- startup and tray behavior
+- update checks
+- language selection
+- theme entry point
+
+![BossKey settings window](docs/images/settings-window.png)
+
+## Themes
+
+BossKey includes a built-in theme system instead of relying on system defaults.
+
+- default light and dark themes
+- live preview while editing
+- customizable theme colors
+- themed message boxes and dialogs
+
+![BossKey theme settings window](docs/images/theme-settings-window.png)
+
+![BossKey color picker](docs/images/color-picker-window.png)
 
 ## Language Packs
 
 - Built-in language: English
 - Remote language packs currently included in this repository: Simplified Chinese and Japanese
 - Installed language packs are stored in:
-  - `%APPDATA%\\BossKey\\Languages`
+  - `%APPDATA%\BossKey\Languages`
 - Main settings are stored in:
-  - `%APPDATA%\\BossKey\\settings.json`
+  - `%APPDATA%\BossKey\settings.json`
 - When the app checks for updates, it can also refresh installed language packs if newer versions are available.
 
 ## Download
