@@ -141,7 +141,7 @@ public static class Localizer
 
     public static Task<LanguageSyncResult> SyncLanguagePacksAsync(CancellationToken cancellationToken = default)
     {
-        return RefreshRemoteCatalogAsync(cancellationToken);
+        return UpdateInstalledLanguagePacksAsync(cancellationToken);
     }
 
     public static async Task<LanguageSyncResult> RefreshRemoteCatalogAsync(CancellationToken cancellationToken = default)
@@ -217,6 +217,51 @@ public static class Localizer
             return ApplyRemoteCatalogUpdate(
                 manifest,
                 downloaded ? new[] { normalizedCode } : Array.Empty<string>());
+        }
+        catch (Exception ex)
+        {
+            return LanguageSyncResult.Failed(ex.Message);
+        }
+        finally
+        {
+            RemoteSyncSemaphore.Release();
+        }
+    }
+
+    public static async Task<LanguageSyncResult> UpdateInstalledLanguagePacksAsync(
+        CancellationToken cancellationToken = default)
+    {
+        EnsureInitialized();
+        await RemoteSyncSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var manifest = await RemoteLanguageService.FetchCatalogAsync(cancellationToken).ConfigureAwait(false);
+            HashSet<string> installedCodes;
+            lock (Gate)
+            {
+                installedCodes = _installedPacks.Keys
+                    .Where(static code => !string.Equals(code, DefaultLanguage, StringComparison.OrdinalIgnoreCase))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var downloadedCodes = new List<string>();
+            if (installedCodes.Count > 0)
+            {
+                var targetDirectory = GetLanguageDirectoryPath();
+                foreach (var entry in manifest.Languages.Where(entry => installedCodes.Contains(entry.Code)))
+                {
+                    var downloaded = await RemoteLanguageService.DownloadLanguageIfNeededAsync(
+                        entry,
+                        targetDirectory,
+                        cancellationToken).ConfigureAwait(false);
+                    if (downloaded)
+                    {
+                        downloadedCodes.Add(entry.Code);
+                    }
+                }
+            }
+
+            return ApplyRemoteCatalogUpdate(manifest, downloadedCodes);
         }
         catch (Exception ex)
         {
@@ -327,7 +372,7 @@ public static class Localizer
                      .OrderBy(static pack => string.Equals(pack.Code, DefaultLanguage, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                      .ThenBy(static pack => pack.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            options.Add(new LanguageOption(pack.Code, pack.DisplayName));
+            options.Add(new LanguageOption(pack.Code, pack.DisplayName, GetLanguageVersionNoLock(pack.Code)));
             seenCodes.Add(pack.Code);
         }
 
@@ -337,14 +382,17 @@ public static class Localizer
         {
             if (seenCodes.Add(entry.Code))
             {
-                options.Add(new LanguageOption(entry.Code, entry.DisplayName));
+                options.Add(new LanguageOption(entry.Code, entry.DisplayName, GetLanguageVersionNoLock(entry.Code)));
             }
         }
 
         var normalizedIncludedCode = NormalizeStoredLanguageNoLock(includeLanguageCode);
         if (seenCodes.Add(normalizedIncludedCode))
         {
-            options.Add(new LanguageOption(normalizedIncludedCode, GetLanguageDisplayNameNoLock(normalizedIncludedCode)));
+            options.Add(new LanguageOption(
+                normalizedIncludedCode,
+                GetLanguageDisplayNameNoLock(normalizedIncludedCode),
+                GetLanguageVersionNoLock(normalizedIncludedCode)));
         }
 
         return options;
@@ -355,7 +403,7 @@ public static class Localizer
         return string.Join(
             "|",
             BuildSupportedLanguagesNoLock(includeLanguageCode: null)
-                .Select(static option => $"{option.Code}:{option.DisplayName}"));
+                .Select(static option => $"{option.Code}:{option.DisplayText}"));
     }
 
     private static string GetLanguageDisplayNameNoLock(string languageCode)
@@ -371,6 +419,23 @@ public static class Localizer
         }
 
         return languageCode;
+    }
+
+    private static string GetLanguageVersionNoLock(string languageCode)
+    {
+        if (_remoteCatalog.TryGetValue(languageCode, out var remotePack)
+            && !string.IsNullOrWhiteSpace(remotePack.Version))
+        {
+            return remotePack.Version;
+        }
+
+        if (_installedPacks.TryGetValue(languageCode, out var installedPack)
+            && !string.IsNullOrWhiteSpace(installedPack.Version))
+        {
+            return installedPack.Version;
+        }
+
+        return string.Empty;
     }
 
     private static string ResolveLanguageNoLock(string? languageCode)

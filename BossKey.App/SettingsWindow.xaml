@@ -698,7 +698,7 @@
                                       Style="{StaticResource RoundedComboBoxStyle}"
                                       ItemContainerStyle="{StaticResource RoundedComboBoxItemStyle}"
                                       VerticalContentAlignment="Center"
-                                      DisplayMemberPath="DisplayName"
+                                      DisplayMemberPath="DisplayText"
                                       SelectionChanged="LanguageComboBox_OnSelectionChanged" />
                             <Button x:Name="SyncLanguagesButton"
                                     Grid.Row="5"
