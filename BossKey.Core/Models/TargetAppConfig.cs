@@ -8,4 +8,5 @@ public sealed class TargetAppConfig
     public bool Enabled { get; set; } = true;
     public bool MuteOnHide { get; set; }
     public bool FreezeOnHide { get; set; }
+    public bool TopMostOnShow { get; set; }
 }

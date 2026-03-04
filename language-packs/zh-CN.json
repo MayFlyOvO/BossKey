@@ -1,7 +1,7 @@
 {
     "code": "zh-CN",
     "displayName": "简体中文",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "translations": {
         "Main.WindowTitle": "BossKey 老板键",
         "Main.Title": "BossKey",
@@ -55,6 +55,7 @@
         "Main.TargetEnabled": "启用",
         "Main.TargetMuteOnHide": "隐藏时静音",
         "Main.TargetFreezeOnHide": "隐藏时冻结",
+        "Main.TargetTopMostOnShow": "显示时置顶",
         "Main.GroupRename": "重命名分组",
         "Main.GroupDelete": "删除分组",
         "Main.GroupToggle": "折叠或展开分组",

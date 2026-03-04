@@ -23,6 +23,9 @@ internal static class NativeMethods
     public const int SwShowMinimized = 2;
     public const int SwShowMinNoActive = 7;
     public const int SwRestore = 9;
+    public const uint SwpNoSize = 0x0001;
+    public const uint SwpNoMove = 0x0002;
+    public const uint SwpShowWindow = 0x0040;
     public const uint GaRoot = 2;
     public const int GwlExStyle = -20;
     public const uint WsExTransparent = 0x00000020;
@@ -121,6 +124,17 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        uint uFlags);
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern int GetWindowTextLength(IntPtr hWnd);

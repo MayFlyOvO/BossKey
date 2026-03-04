@@ -1,7 +1,7 @@
 {
     "code": "en-US",
     "displayName": "English",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "translations": {
         "Main.WindowTitle": "BossKey Boss Key",
         "Main.Title": "BossKey",
@@ -55,6 +55,7 @@
         "Main.TargetEnabled": "Enabled",
         "Main.TargetMuteOnHide": "Mute on hide",
         "Main.TargetFreezeOnHide": "Freeze on hide",
+        "Main.TargetTopMostOnShow": "Topmost on show",
         "Main.GroupRename": "Rename group",
         "Main.GroupDelete": "Delete group",
         "Main.GroupToggle": "Collapse or expand group",

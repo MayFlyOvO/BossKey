@@ -787,6 +787,10 @@
                                                                               IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                               Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="ToggleTargetFreezeMenuItem_OnClick" />
+                                                                    <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
+                                                                              IsChecked="{Binding TopMostOnShow, Mode=TwoWay}"
+                                                                              Header="{Binding PlacementTarget.Tag.TargetTopMostOnShowText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Click="ToggleTargetTopMostMenuItem_OnClick" />
                                                                     <Separator Style="{StaticResource TargetContextMenuSeparatorStyle}" />
                                                                     <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               Click="RemoveTargetMenuItem_OnClick" />
@@ -817,8 +821,9 @@
                                                                                HorizontalAlignment="Center" />
                                                                     </Border>
                                                                     <Border x:Name="UngroupedStatusBadge"
-                                                                            Width="42"
+                                                                            MinWidth="24"
                                                                             Height="24"
+                                                                            Padding="6,0"
                                                                             Margin="0,-12,-21,0"
                                                                             HorizontalAlignment="Right"
                                                                             VerticalAlignment="Top"
@@ -828,25 +833,35 @@
                                                                             BorderThickness="1"
                                                                             BorderBrush="#FFD8E3F0"
                                                                             Visibility="Collapsed">
-                                                                        <StackPanel Orientation="Horizontal"
+                                                                            <StackPanel Orientation="Horizontal"
                                                                                     HorizontalAlignment="Center"
                                                                                     VerticalAlignment="Center">
-                                                                            <TextBlock x:Name="UngroupedMuteGlyph"
-                                                                                       Text="&#x1F507;"
-                                                                                       FontFamily="Segoe UI Emoji"
-                                                                                       FontSize="11"
-                                                                                       Visibility="Collapsed"
-                                                                                       HorizontalAlignment="Center"
-                                                                                       VerticalAlignment="Center"
-                                                                                       TextAlignment="Center" />
-                                                                            <TextBlock x:Name="UngroupedFreezeGlyph"
-                                                                                       Text="&#x2744;&#xFE0F;"
-                                                                                       FontFamily="Segoe UI Emoji"
-                                                                                       FontSize="11"
-                                                                                       Visibility="Collapsed"
-                                                                                       HorizontalAlignment="Center"
-                                                                                       VerticalAlignment="Center"
-                                                                                       TextAlignment="Center" />
+                                                                                <TextBlock x:Name="UngroupedMuteGlyph"
+                                                                                           Text="&#x1F507;"
+                                                                                           FontFamily="Segoe UI Emoji"
+                                                                                           FontSize="11"
+                                                                                           Visibility="Collapsed"
+                                                                                           HorizontalAlignment="Center"
+                                                                                           VerticalAlignment="Center"
+                                                                                           TextAlignment="Center" />
+                                                                                <TextBlock x:Name="UngroupedFreezeGlyph"
+                                                                                          Text="&#x2744;&#xFE0F;"
+                                                                                          FontFamily="Segoe UI Emoji"
+                                                                                          FontSize="11"
+                                                                                          Visibility="Collapsed"
+                                                                                          Margin="2,0,0,0"
+                                                                                          HorizontalAlignment="Center"
+                                                                                          VerticalAlignment="Center"
+                                                                                          TextAlignment="Center" />
+                                                                                <TextBlock x:Name="UngroupedTopMostGlyph"
+                                                                                           Text="&#x1F4CC;"
+                                                                                           FontFamily="Segoe UI Emoji"
+                                                                                           FontSize="11"
+                                                                                           Visibility="Collapsed"
+                                                                                           Margin="2,0,0,0"
+                                                                                          HorizontalAlignment="Center"
+                                                                                          VerticalAlignment="Center"
+                                                                                          TextAlignment="Center" />
                                                                         </StackPanel>
                                                                     </Border>
                                                                 </Grid>
@@ -878,6 +893,10 @@
                                                             <DataTrigger Binding="{Binding FreezeOnHide}" Value="True">
                                                                 <Setter TargetName="UngroupedStatusBadge" Property="Visibility" Value="Visible" />
                                                                 <Setter TargetName="UngroupedFreezeGlyph" Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding TopMostOnShow}" Value="True">
+                                                                <Setter TargetName="UngroupedStatusBadge" Property="Visibility" Value="Visible" />
+                                                                <Setter TargetName="UngroupedTopMostGlyph" Property="Visibility" Value="Visible" />
                                                             </DataTrigger>
                                                         </DataTemplate.Triggers>
                                                     </DataTemplate>
@@ -1084,6 +1103,10 @@
                                                                                                   IsChecked="{Binding FreezeOnHide, Mode=TwoWay}"
                                                                                                   Header="{Binding PlacementTarget.Tag.TargetFreezeOnHideText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="ToggleTargetFreezeMenuItem_OnClick" />
+                                                                                        <MenuItem Style="{StaticResource SwitchMenuItemStyle}" IsCheckable="True"
+                                                                                                  IsChecked="{Binding TopMostOnShow, Mode=TwoWay}"
+                                                                                                  Header="{Binding PlacementTarget.Tag.TargetTopMostOnShowText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                                  Click="ToggleTargetTopMostMenuItem_OnClick" />
                                                                                         <Separator Style="{StaticResource TargetContextMenuSeparatorStyle}" />
                                                                                         <MenuItem Style="{StaticResource ContextActionMenuItemStyle}" Header="{Binding PlacementTarget.Tag.RemoveButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                                   Click="RemoveTargetMenuItem_OnClick" />
@@ -1114,8 +1137,9 @@
                                                                                                    HorizontalAlignment="Center" />
                                                                                         </Border>
                                                                                         <Border x:Name="StatusBadge"
-                                                                                                Width="42"
+                                                                                                MinWidth="24"
                                                                                                 Height="24"
+                                                                                                Padding="6,0"
                                                                                                 Margin="0,-12,-21,0"
                                                                                                 HorizontalAlignment="Right"
                                                                                                 VerticalAlignment="Top"
@@ -1141,6 +1165,16 @@
                                                                                                            FontFamily="Segoe UI Emoji"
                                                                                                            FontSize="11"
                                                                                                            Visibility="Collapsed"
+                                                                                                           Margin="2,0,0,0"
+                                                                                                           HorizontalAlignment="Center"
+                                                                                                           VerticalAlignment="Center"
+                                                                                                           TextAlignment="Center" />
+                                                                                                <TextBlock x:Name="TopMostGlyph"
+                                                                                                           Text="&#x1F4CC;"
+                                                                                                           FontFamily="Segoe UI Emoji"
+                                                                                                           FontSize="11"
+                                                                                                           Visibility="Collapsed"
+                                                                                                           Margin="2,0,0,0"
                                                                                                            HorizontalAlignment="Center"
                                                                                                            VerticalAlignment="Center"
                                                                                                            TextAlignment="Center" />
@@ -1175,6 +1209,10 @@
                                                                                 <DataTrigger Binding="{Binding FreezeOnHide}" Value="True">
                                                                                     <Setter TargetName="StatusBadge" Property="Visibility" Value="Visible" />
                                                                                     <Setter TargetName="FreezeGlyph" Property="Visibility" Value="Visible" />
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding TopMostOnShow}" Value="True">
+                                                                                    <Setter TargetName="StatusBadge" Property="Visibility" Value="Visible" />
+                                                                                    <Setter TargetName="TopMostGlyph" Property="Visibility" Value="Visible" />
                                                                                 </DataTrigger>
                                                                             </DataTemplate.Triggers>
                                                                         </DataTemplate>

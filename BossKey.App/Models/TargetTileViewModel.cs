@@ -67,6 +67,21 @@ public sealed class TargetTileViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool TopMostOnShow
+    {
+        get => _config.TopMostOnShow;
+        set
+        {
+            if (_config.TopMostOnShow == value)
+            {
+                return;
+            }
+
+            _config.TopMostOnShow = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TopMostOnShow)));
+        }
+    }
+
     public ImageSource IconSource
     {
         get => _iconSource;

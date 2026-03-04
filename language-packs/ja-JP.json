@@ -1,7 +1,7 @@
 {
     "code": "ja-JP",
     "displayName": "日本語",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "translations": {
         "Main.WindowTitle": "BossKey ボスキー",
         "Main.Title": "BossKey",
@@ -55,6 +55,7 @@
         "Main.TargetEnabled": "有効",
         "Main.TargetMuteOnHide": "非表示時にミュート",
         "Main.TargetFreezeOnHide": "非表示時にフリーズ",
+        "Main.TargetTopMostOnShow": "表示時に最前面",
         "Main.GroupRename": "グループ名を変更",
         "Main.GroupDelete": "グループを削除",
         "Main.GroupToggle": "グループを折りたたむ / 展開",

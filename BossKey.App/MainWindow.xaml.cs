@@ -68,6 +68,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private string _targetEnabledText = "Enabled";
     private string _targetMuteOnHideText = "Mute on hide";
     private string _targetFreezeOnHideText = "Freeze on hide";
+    private string _targetTopMostOnShowText = "Topmost on show";
     private string _renameGroupText = "Rename group";
     private string _deleteGroupText = "Delete group";
     private string _toggleGroupText = "Collapse or expand group";
@@ -184,6 +185,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             _targetFreezeOnHideText = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TargetFreezeOnHideText)));
+        }
+    }
+
+    public string TargetTopMostOnShowText
+    {
+        get => _targetTopMostOnShowText;
+        private set
+        {
+            if (string.Equals(_targetTopMostOnShowText, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _targetTopMostOnShowText = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TargetTopMostOnShowText)));
         }
     }
 
@@ -683,7 +699,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     ProcessPath = target.ProcessPath,
                     Enabled = target.Enabled,
                     MuteOnHide = target.MuteOnHide,
-                    FreezeOnHide = target.FreezeOnHide
+                    FreezeOnHide = target.FreezeOnHide,
+                    TopMostOnShow = target.TopMostOnShow
                 })
                 .ToList();
             _settings.Groups = dialog.UpdatedSettings.Groups
@@ -702,7 +719,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                             ProcessPath = target.ProcessPath,
                             Enabled = target.Enabled,
                             MuteOnHide = target.MuteOnHide,
-                            FreezeOnHide = target.FreezeOnHide
+                            FreezeOnHide = target.FreezeOnHide,
+                            TopMostOnShow = target.TopMostOnShow
                         })
                         .ToList()
                 })
@@ -834,7 +852,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private int ShowTargets(string? groupId = null)
     {
-        var restoredCount = _processWindowService.ShowHiddenTargets(groupId);
+        var restoredTargets = groupId is null
+            ? EnumerateAllTargetConfigs()
+            : _groupCards.FirstOrDefault(item => string.Equals(item.Id, groupId, StringComparison.Ordinal))?.Targets
+                .Select(static tile => tile.Config)
+                ?? [];
+        var restoredCount = _processWindowService.ShowHiddenTargets(groupId, configuredTargets: restoredTargets);
         SetStatus(restoredCount > 0
             ? Localizer.Format("Main.StatusShown", restoredCount)
             : Localizer.T("Main.StatusNoHidden"));
@@ -884,7 +907,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                         ProcessPath = tile.Config.ProcessPath,
                         Enabled = tile.Config.Enabled,
                         MuteOnHide = tile.Config.MuteOnHide,
-                        FreezeOnHide = tile.Config.FreezeOnHide
+                        FreezeOnHide = tile.Config.FreezeOnHide,
+                        TopMostOnShow = tile.Config.TopMostOnShow
                     })
                     .ToList()
             })
@@ -898,7 +922,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
                 MuteOnHide = target.MuteOnHide,
-                FreezeOnHide = target.FreezeOnHide
+                FreezeOnHide = target.FreezeOnHide,
+                TopMostOnShow = target.TopMostOnShow
             })
             .ToList();
 
@@ -1000,7 +1025,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ProcessPath = processPath,
                 Enabled = true,
                 MuteOnHide = false,
-                FreezeOnHide = false
+                FreezeOnHide = false,
+                TopMostOnShow = false
             },
             _appIconService.GetIcon(processPath)));
         defaultGroup.RefreshHotkeyText();
@@ -1033,7 +1059,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
                 MuteOnHide = target.MuteOnHide,
-                FreezeOnHide = target.FreezeOnHide
+                FreezeOnHide = target.FreezeOnHide,
+                TopMostOnShow = target.TopMostOnShow
             },
             _appIconService.GetIcon(target.ProcessPath)));
         return new TargetGroupViewModel(group, tiles);
@@ -1617,6 +1644,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PersistSettings();
     }
 
+    private void ToggleTargetTopMostMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
+        {
+            return;
+        }
+
+        if (element is System.Windows.Controls.MenuItem menuItem)
+        {
+            tile.TopMostOnShow = menuItem.IsChecked;
+        }
+
+        PersistSettings();
+    }
+
     private void RemoveTargetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement element || element.DataContext is not TargetTileViewModel tile)
@@ -1724,6 +1766,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         TargetEnabledText = Localizer.T("Main.TargetEnabled");
         TargetMuteOnHideText = Localizer.T("Main.TargetMuteOnHide");
         TargetFreezeOnHideText = Localizer.T("Main.TargetFreezeOnHide");
+        TargetTopMostOnShowText = Localizer.T("Main.TargetTopMostOnShow");
         RenameGroupText = Localizer.T("Main.GroupRename");
         DeleteGroupText = Localizer.T("Main.GroupDelete");
         ToggleGroupText = Localizer.T("Main.GroupToggle");

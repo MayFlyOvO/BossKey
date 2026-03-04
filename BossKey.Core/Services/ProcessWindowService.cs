@@ -11,6 +11,7 @@ public sealed class ProcessWindowService
     private readonly Dictionary<IntPtr, HiddenWindowState> _hiddenWindows = [];
     private readonly Dictionary<int, ProcessMuteSnapshot> _mutedProcesses = [];
     private readonly Dictionary<int, FrozenProcessSnapshot> _frozenProcesses = [];
+    private readonly HashSet<IntPtr> _managedTopMostWindows = [];
 
     public bool HasHiddenWindows => _hiddenWindows.Count > 0;
     public bool HasHiddenWindowsInGroup(string groupId) =>
@@ -84,7 +85,13 @@ public sealed class ProcessWindowService
             var showState = GetWindowShowState(window.Handle);
             if (NativeMethods.ShowWindow(window.Handle, NativeMethods.SwHide))
             {
-                _hiddenWindows[window.Handle] = new HiddenWindowState(window.Handle, showState, groupId, target.Id);
+                var wasManagedTopMost = _managedTopMostWindows.Remove(window.Handle);
+                _hiddenWindows[window.Handle] = new HiddenWindowState(
+                    window.Handle,
+                    showState,
+                    groupId,
+                    target.Id,
+                    wasManagedTopMost);
                 hiddenMatches.Add((window, target));
             }
         }
@@ -112,7 +119,10 @@ public sealed class ProcessWindowService
         return hiddenMatches.Count;
     }
 
-    public int ShowHiddenTargets(string? groupId = null, bool bringToFront = true)
+    public int ShowHiddenTargets(
+        string? groupId = null,
+        bool bringToFront = true,
+        IEnumerable<TargetAppConfig>? configuredTargets = null)
     {
         if (_hiddenWindows.Count == 0)
         {
@@ -123,6 +133,10 @@ public sealed class ProcessWindowService
 
         var restoredCount = 0;
         IntPtr? firstRestoredWindow = null;
+        var promotedWindow = false;
+        var topMostTargetIds = bringToFront
+            ? BuildTopMostTargetIdSet(configuredTargets)
+            : null;
 
         var hiddenWindows = _hiddenWindows.Values
             .Where(hiddenWindow => groupId is null || string.Equals(hiddenWindow.GroupId, groupId, StringComparison.Ordinal))
@@ -158,13 +172,28 @@ public sealed class ProcessWindowService
             NativeMethods.ShowWindow(handle, command);
             restoredCount++;
 
-            if (hiddenWindow.ShowState != WindowShowState.Minimized)
+            if (bringToFront
+                && topMostTargetIds is not null
+                && topMostTargetIds.Contains(hiddenWindow.TargetId))
             {
-                firstRestoredWindow ??= handle;
+                SetManagedTopMost(handle);
+                promotedWindow = true;
+            }
+            else
+            {
+                if (hiddenWindow.WasManagedTopMost)
+                {
+                    ClearManagedTopMost(handle);
+                }
+
+                if (hiddenWindow.ShowState != WindowShowState.Minimized)
+                {
+                    firstRestoredWindow ??= handle;
+                }
             }
         }
 
-        if (bringToFront && firstRestoredWindow.HasValue)
+        if (bringToFront && !promotedWindow && firstRestoredWindow.HasValue)
         {
             NativeMethods.SetForegroundWindow(firstRestoredWindow.Value);
         }
@@ -175,7 +204,8 @@ public sealed class ProcessWindowService
 
     public int ShowHiddenTargets(IEnumerable<TargetAppConfig> targets, string? groupId = null, bool bringToFront = true)
     {
-        var targetIds = targets
+        var targetList = targets.ToList();
+        var targetIds = targetList
             .Select(static target => target.Id)
             .Where(static id => !string.IsNullOrWhiteSpace(id))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -199,6 +229,10 @@ public sealed class ProcessWindowService
 
         var restoredCount = 0;
         IntPtr? firstRestoredWindow = null;
+        var promotedWindow = false;
+        var topMostTargetIds = bringToFront
+            ? BuildTopMostTargetIdSet(targetList)
+            : null;
         foreach (var hiddenWindow in hiddenWindows)
         {
             _hiddenWindows.Remove(hiddenWindow.Handle);
@@ -221,13 +255,28 @@ public sealed class ProcessWindowService
             NativeMethods.ShowWindow(handle, command);
             restoredCount++;
 
-            if (hiddenWindow.ShowState != WindowShowState.Minimized)
+            if (bringToFront
+                && topMostTargetIds is not null
+                && topMostTargetIds.Contains(hiddenWindow.TargetId))
             {
-                firstRestoredWindow ??= handle;
+                SetManagedTopMost(handle);
+                promotedWindow = true;
+            }
+            else
+            {
+                if (hiddenWindow.WasManagedTopMost)
+                {
+                    ClearManagedTopMost(handle);
+                }
+
+                if (hiddenWindow.ShowState != WindowShowState.Minimized)
+                {
+                    firstRestoredWindow ??= handle;
+                }
             }
         }
 
-        if (bringToFront && firstRestoredWindow.HasValue)
+        if (bringToFront && !promotedWindow && firstRestoredWindow.HasValue)
         {
             NativeMethods.SetForegroundWindow(firstRestoredWindow.Value);
         }
@@ -403,6 +452,41 @@ public sealed class ProcessWindowService
         }
 
         return WindowShowState.Normal;
+    }
+
+    private static HashSet<string>? BuildTopMostTargetIdSet(IEnumerable<TargetAppConfig>? targets)
+    {
+        if (targets is null)
+        {
+            return null;
+        }
+
+        var targetIds = targets
+            .Where(static target => target.TopMostOnShow && !string.IsNullOrWhiteSpace(target.Id))
+            .Select(static target => target.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return targetIds.Count > 0 ? targetIds : null;
+    }
+
+    private void SetManagedTopMost(IntPtr handle)
+    {
+        const uint flags = NativeMethods.SwpNoMove | NativeMethods.SwpNoSize | NativeMethods.SwpShowWindow;
+        var hwndTopMost = new IntPtr(-1);
+        NativeMethods.SetWindowPos(handle, hwndTopMost, 0, 0, 0, 0, flags);
+        NativeMethods.SetForegroundWindow(handle);
+        _managedTopMostWindows.Add(handle);
+    }
+
+    private void ClearManagedTopMost(IntPtr handle)
+    {
+        if (!_managedTopMostWindows.Remove(handle))
+        {
+            return;
+        }
+
+        const uint flags = NativeMethods.SwpNoMove | NativeMethods.SwpNoSize | NativeMethods.SwpShowWindow;
+        var hwndNoTopMost = new IntPtr(-2);
+        NativeMethods.SetWindowPos(handle, hwndNoTopMost, 0, 0, 0, 0, flags);
     }
 
     private void TryMuteMatchingProcessesForCurrentSession(TargetAppConfig target, string? groupId)
@@ -633,7 +717,8 @@ public sealed class ProcessWindowService
         IntPtr Handle,
         WindowShowState ShowState,
         string? GroupId,
-        string TargetId);
+        string TargetId,
+        bool WasManagedTopMost);
 
     private sealed record ProcessMuteSnapshot(
         int ProcessId,

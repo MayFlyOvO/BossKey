@@ -633,7 +633,8 @@ public partial class SettingsWindow : Window
                     ProcessPath = target.ProcessPath,
                     Enabled = target.Enabled,
                     MuteOnHide = target.MuteOnHide,
-                    FreezeOnHide = target.FreezeOnHide
+                    FreezeOnHide = target.FreezeOnHide,
+                    TopMostOnShow = target.TopMostOnShow
                 })
                 .ToList(),
             Groups = source.Groups
@@ -652,7 +653,8 @@ public partial class SettingsWindow : Window
                             ProcessPath = target.ProcessPath,
                             Enabled = target.Enabled,
                             MuteOnHide = target.MuteOnHide,
-                            FreezeOnHide = target.FreezeOnHide
+                            FreezeOnHide = target.FreezeOnHide,
+                            TopMostOnShow = target.TopMostOnShow
                         })
                         .ToList()
                 })
@@ -689,7 +691,8 @@ public partial class SettingsWindow : Window
                 ProcessPath = target.ProcessPath,
                 Enabled = target.Enabled,
                 MuteOnHide = target.MuteOnHide,
-                FreezeOnHide = target.FreezeOnHide
+                FreezeOnHide = target.FreezeOnHide,
+                TopMostOnShow = target.TopMostOnShow
             })
             .ToList();
         destination.Groups = source.Groups
@@ -708,7 +711,8 @@ public partial class SettingsWindow : Window
                         ProcessPath = target.ProcessPath,
                         Enabled = target.Enabled,
                         MuteOnHide = target.MuteOnHide,
-                        FreezeOnHide = target.FreezeOnHide
+                        FreezeOnHide = target.FreezeOnHide,
+                        TopMostOnShow = target.TopMostOnShow
                     })
                     .ToList()
             })
