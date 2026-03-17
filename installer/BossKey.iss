@@ -10,6 +10,18 @@
   #define OutputBaseName "BossKey-Setup"
 #endif
 
+#ifndef DotNetDesktopRuntimeVersionPrefix
+  #define DotNetDesktopRuntimeVersionPrefix "8.0."
+#endif
+
+#ifndef DotNetDesktopRuntimeDownloadUrl
+  #define DotNetDesktopRuntimeDownloadUrl "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe"
+#endif
+
+#ifndef DotNetDesktopRuntimeInstallerName
+  #define DotNetDesktopRuntimeInstallerName "windowsdesktop-runtime-8-win-x64.exe"
+#endif
+
 #ifndef SourceDir
   #error SourceDir is not defined.
 #endif
@@ -37,7 +49,8 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
+UsedUserAreasWarning=no
 SetupIconFile={#SourceIcon}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
@@ -63,3 +76,88 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+const
+  DotNetRuntimeRegKey = 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App';
+  DotNetRuntimeVersionPrefix = '{#DotNetDesktopRuntimeVersionPrefix}';
+  DotNetRuntimeDownloadUrl = '{#DotNetDesktopRuntimeDownloadUrl}';
+  DotNetRuntimeInstallerName = '{#DotNetDesktopRuntimeInstallerName}';
+
+function IsDesktopRuntimeInstalled: Boolean;
+var
+  SubKeyNames: TArrayOfString;
+  I: Integer;
+begin
+  Result := False;
+  if not RegGetSubkeyNames(HKLM, DotNetRuntimeRegKey, SubKeyNames) then
+    Exit;
+
+  for I := 0 to GetArrayLength(SubKeyNames) - 1 do
+  begin
+    if Pos(DotNetRuntimeVersionPrefix, SubKeyNames[I]) = 1 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+function InstallDesktopRuntime: Boolean;
+var
+  ResultCode: Integer;
+  CommandLine: string;
+begin
+  Result := True;
+  if IsDesktopRuntimeInstalled then
+    Exit;
+
+  if MsgBox(
+      'BossKey requires .NET Desktop Runtime 8.0. Setup will now download and install it automatically.',
+      mbInformation,
+      MB_OKCANCEL) <> IDOK then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  CommandLine :=
+    '-NoProfile -ExecutionPolicy Bypass -Command "' +
+    '$ErrorActionPreference = ''Stop''; ' +
+    '$url = ''' + DotNetRuntimeDownloadUrl + '''; ' +
+    '$out = Join-Path $env:TEMP ''' + DotNetRuntimeInstallerName + '''; ' +
+    'Invoke-WebRequest -Uri $url -OutFile $out; ' +
+    '$p = Start-Process -FilePath $out -ArgumentList ''/install'',''/quiet'',''/norestart'' -Wait -PassThru; ' +
+    'exit $p.ExitCode"';
+
+  if not Exec('powershell.exe', CommandLine, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    MsgBox('Failed to start .NET Desktop Runtime installer.', mbError, MB_OK);
+    Result := False;
+    Exit;
+  end;
+
+  if ResultCode <> 0 then
+  begin
+    MsgBox(
+      Format('.NET Desktop Runtime installer exited with code %d.', [ResultCode]),
+      mbError,
+      MB_OK);
+    Result := False;
+    Exit;
+  end;
+
+  if not IsDesktopRuntimeInstalled then
+  begin
+    MsgBox('.NET Desktop Runtime 8.0 is still missing after installation.', mbError, MB_OK);
+    Result := False;
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  if InstallDesktopRuntime then
+    Result := ''
+  else
+    Result := '.NET Desktop Runtime 8.0 installation is required to continue.';
+end;

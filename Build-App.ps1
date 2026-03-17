@@ -94,44 +94,47 @@ $versionArgs = @(
     "-p:AssemblyVersion=$fileVersion",
     "-p:InformationalVersion=$Version"
 )
-
-Invoke-Step "[1/6] Restore..." @(
-    "dotnet", "restore", $appProject
+$buildFlags = @(
+    "-p:NuGetAudit=false"
 )
+
+Invoke-Step "[1/6] Restore..." (@(
+    "dotnet", "restore", $appProject
+) + $buildFlags)
 
 $buildCommand = @(
     "dotnet", "build", $appProject,
     "-c", $config,
     "-o", $buildOut
-) + $versionArgs
+) + $versionArgs + $buildFlags
 Invoke-Step "[2/6] Build $Version..." $buildCommand
 
 $publishMultiFileCommand = @(
     "dotnet", "publish", $appProject,
     "-c", $config,
     "-r", $rid,
-    "--self-contained", "true",
+    "--self-contained", "false",
     "-p:PublishSingleFile=false",
     "-p:UpdateChannel=installer",
     "-p:DebugType=None",
     "-p:DebugSymbols=false",
     "-o", $publishOut
-) + $versionArgs
-Invoke-Step "[3/6] Publish Multi-File (self-contained, $rid)..." $publishMultiFileCommand
+) + $versionArgs + $buildFlags
+Invoke-Step "[3/6] Publish Multi-File (framework-dependent, $rid)..." $publishMultiFileCommand
 
 $publishSingleFileCommand = @(
     "dotnet", "publish", $appProject,
     "-c", $config,
     "-r", $rid,
-    "--self-contained", "true",
+    "--self-contained", "false",
     "-p:PublishSingleFile=true",
     "-p:IncludeNativeLibrariesForSelfExtract=true",
     "-p:UpdateChannel=singlefile",
     "-p:DebugType=None",
     "-p:DebugSymbols=false",
     "-o", $singleOut
-) + $versionArgs
-Invoke-Step "[4/6] Publish Single-File (self-contained, $rid)..." $publishSingleFileCommand
+) + $versionArgs + $buildFlags
+Invoke-Step "[4/6] Publish Single-File (framework-dependent, $rid)..." $publishSingleFileCommand
 
 $singleFileExe = Join-Path $singleOut "BossKey.App.exe"
 if (Test-Path $singleFileExe) {

@@ -1,12 +1,18 @@
-# BossKey
+﻿# BossKey
 
-English | [简体中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
+English | [Chinese](README.zh-CN.md) | [Japanese](README.ja-JP.md)
 
 <sub>A more considered Boss Key for Windows, with a cleaner and more polished interface than this category usually gets.</sub>
 
 BossKey is a Windows desktop utility for quickly hiding, restoring, and organizing selected application windows. It is built for fast "boss key" workflows, but it is also useful as a lightweight window control tool for daily work setups.
 
 ![BossKey main window overview](docs/images/main-window-overview.png)
+
+## Update
+
+- v1.6.1 rolls back to the net8.0 build baseline to recover runtime stability.
+- Installer and single-file packages are now both framework-dependent.
+- The installer can auto-install .NET Desktop Runtime 8 when missing.
 
 ## Core Workflow
 
@@ -69,8 +75,8 @@ BossKey includes a built-in theme system instead of relying on system defaults.
 
 Get the latest release from GitHub Releases:
 
-- Installer build: recommended for normal use
-- Single-file build: recommended for portable use
+- Installer build (framework-dependent): recommended for normal use
+- Single-file build (framework-dependent): recommended for portable use
 
 Release page:
 
@@ -80,6 +86,7 @@ Release page:
 
 - Windows 10 / 11
 - x64
+- .NET Desktop Runtime 8 to run the app (installer can auto-install it)
 - .NET 8 SDK to build from source
 
 ## Build From Source
@@ -97,8 +104,8 @@ Build-Release.bat
 
 The GitHub Actions workflow builds:
 
-- a self-contained installer package
-- a self-contained single-file package
+- an installer package (framework-dependent)
+- a single-file package (framework-dependent)
 
 ## Notes
 

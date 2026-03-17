@@ -27,63 +27,30 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore
-        run: dotnet restore BossKey.sln
+      - name: Apply Tag Version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: powershell
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:\.\d+)?)$') {
+            throw "Invalid tag format '$tag'. Expected v1.2.3 or v1.2.3.4."
+          }
 
-      - name: Build
-        run: dotnet build BossKey.sln -c Release --no-restore
-
-      - name: Publish Multi-File (self-contained)
-        run: >
-          dotnet publish .\BossKey.App\BossKey.App.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=false
-          -p:UpdateChannel=installer
-          -p:DebugType=None
-          -p:DebugSymbols=false
-          -o .\artifacts\publish
-
-      - name: Publish Single-File (self-contained)
-        run: >
-          dotnet publish .\BossKey.App\BossKey.App.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:UpdateChannel=singlefile
-          -p:DebugType=None
-          -p:DebugSymbols=false
-          -o .\artifacts\singlefile
+          $version = $Matches['version']
+          [xml]$xml = Get-Content ".\build\Version.props"
+          $xml.Project.PropertyGroup.AppVersion = $version
+          $xml.Save((Resolve-Path ".\build\Version.props"))
+          Write-Host "Using release version: $version"
 
       - name: Install Inno Setup
         shell: powershell
         run: |
           choco install innosetup -y --no-progress
 
-      - name: Build Installer
+      - name: Build Packages
         shell: powershell
         run: |
-          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
-          }
-          if (-not (Test-Path $iscc)) {
-            throw "ISCC.exe not found after installation."
-          }
-
-          & $iscc `
-            "/DSourceDir=$pwd\artifacts\publish" `
-            "/DSourceIcon=$pwd\BossKey.App\Assets\BossKey.ico" `
-            "/DOutputDir=$pwd\artifacts\installer" `
-            "$pwd\installer\BossKey.iss"
-
-      - name: Prepare Release Assets
-        shell: powershell
-        run: |
-          Copy-Item ".\artifacts\singlefile\BossKey.App.exe" ".\artifacts\singlefile\BossKey-SingleFile.exe" -Force
+          powershell -NoProfile -ExecutionPolicy Bypass -File ".\Build-App.ps1"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
