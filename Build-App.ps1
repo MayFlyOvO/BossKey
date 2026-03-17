@@ -127,6 +127,7 @@ $publishSingleFileCommand = @(
     "-c", $config,
     "-r", $rid,
     "--self-contained", "false",
+    "-p:PublishSelfContained=false",
     "-p:PublishSingleFile=true",
     "-p:IncludeNativeLibrariesForSelfExtract=true",
     "-p:UpdateChannel=singlefile",
@@ -139,6 +140,11 @@ Invoke-Step "[4/6] Publish Single-File (framework-dependent, $rid)..." $publishS
 $singleFileExe = Join-Path $singleOut "BossKey.App.exe"
 if (Test-Path $singleFileExe) {
     Copy-Item $singleFileExe (Join-Path $singleOut "BossKey-SingleFile.exe") -Force
+}
+$singleFileOutput = Join-Path $singleOut "BossKey-SingleFile.exe"
+if (Test-Path $singleFileOutput) {
+    $singleFileSizeMb = [Math]::Round(((Get-Item $singleFileOutput).Length / 1MB), 2)
+    Write-Host "[INFO] Single-file size: $singleFileSizeMb MB"
 }
 
 Write-Host "[5/6] Build Installer (Inno Setup)..."
